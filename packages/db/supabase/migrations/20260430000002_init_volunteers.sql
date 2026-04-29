@@ -9,7 +9,8 @@ create table public.volunteer_profiles (
   first_name           text,
   last_name            text,
   birth_date           date,
-  is_minor       boolean,
+  is_minor             boolean generated always as
+                       (birth_date > current_date - interval '18 years') stored,
   gender               text check (gender in ('M','F','X','NS')),
   phone                text,
   email                citext,
@@ -129,22 +130,3 @@ create index idx_applications_created on public.volunteer_applications(created_a
 -- ─── RLS ─────────────────────────────────────────────────────────────
 alter table public.volunteer_profiles      enable row level security;
 alter table public.volunteer_applications  enable row level security;
-
-
--- ─── Trigger pour calculer is_minor automatiquement ──────────────
-create or replace function public.tg_set_is_minor()
-returns trigger
-language plpgsql as $$
-begin
-  if new.birth_date is not null then
-    new.is_minor := new.birth_date > current_date - interval '18 years';
-  else
-    new.is_minor := null;
-  end if;
-  return new;
-end;
-$$;
-
-create trigger tg_volunteer_profiles_is_minor
-  before insert or update of birth_date on public.volunteer_profiles
-  for each row execute function public.tg_set_is_minor();

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { VolunteerApplicationForm } from "@/components/volunteer-application-form";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
 }

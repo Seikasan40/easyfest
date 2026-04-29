@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import { createServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
 }

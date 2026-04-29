@@ -4,6 +4,8 @@ import Link from "next/link";
 import { formatDateFr } from "@easyfest/shared";
 import { createServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
 }

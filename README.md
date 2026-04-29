@@ -7,7 +7,7 @@
 
 ---
 
-## Stack
+##  Stack
 
 | Couche | Choix |
 |---|---|

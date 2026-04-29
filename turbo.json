@@ -1,0 +1,70 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local", "**/.env"],
+  "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_VITRINE_URL",
+    "NEXT_PUBLIC_ADMIN_URL",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+    "NEXT_PUBLIC_MAPBOX_TOKEN",
+    "NEXT_PUBLIC_SENTRY_DSN_WEB",
+    "NEXT_PUBLIC_POSTHOG_KEY",
+    "NEXT_PUBLIC_POSTHOG_HOST",
+    "NEXT_PUBLIC_DEFAULT_LOCALE",
+    "NEXT_PUBLIC_DEFAULT_TIMEZONE",
+    "EXPO_PUBLIC_SUPABASE_URL",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY",
+    "EXPO_PUBLIC_MAPBOX_TOKEN",
+    "EXPO_PUBLIC_SENTRY_DSN_MOBILE",
+    "EXPO_PUBLIC_POSTHOG_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_JWT_SECRET",
+    "SUPABASE_PROJECT_REF",
+    "QR_HMAC_SECRET",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL",
+    "TURNSTILE_SECRET_KEY",
+    "CRON_SECRET",
+    "FEATURE_BILLETTERIE",
+    "FEATURE_CASHLESS",
+    "FEATURE_SPONSORS_CRM",
+    "FEATURE_AI_COPILOT",
+    "FEATURE_MEDIATORS",
+    "FEATURE_OFFLINE_PWA",
+    "FEATURE_MFA_TOTP",
+    "FEATURE_SAFER_SPACE_V0",
+    "FEATURE_QR_SCAN_LIVE",
+    "FEATURE_REALTIME"
+  ],
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "outputs": ["coverage/**"]
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

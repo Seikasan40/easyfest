@@ -1,0 +1,56 @@
+{
+  "name": "easyfest",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Easyfest — SaaS multi-tenant pour festivals associatifs. Multi-festival, multi-rôle, RGPD-clean.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@8.15.4",
+  "engines": {
+    "node": ">=20.10.0",
+    "pnpm": ">=8.15.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,sql}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,sql}\"",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @easyfest/db migrate",
+    "db:seed": "pnpm --filter @easyfest/db seed",
+    "db:types": "pnpm --filter @easyfest/db types",
+    "db:reset": "pnpm --filter @easyfest/db reset",
+    "db:seed-users": "pnpm --filter @easyfest/scripts seed-users",
+    "supabase:start": "pnpm --filter @easyfest/db supabase:start",
+    "supabase:stop": "pnpm --filter @easyfest/db supabase:stop",
+    "supabase:link": "pnpm --filter @easyfest/db supabase:link",
+    "deploy:vitrine": "pnpm --filter @easyfest/vitrine build && netlify deploy --prod --dir=apps/vitrine/.next",
+    "build:apk": "pnpm --filter @easyfest/mobile eas:build:apk",
+    "prepare": "husky install || true"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^7.5.0",
+    "@typescript-eslint/parser": "^7.5.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-tailwindcss": "^3.15.1",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.5.13",
+    "turbo": "^1.13.2",
+    "typescript": "5.4.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md,sql,yml,yaml}": ["prettier --write"]
+  }
+}

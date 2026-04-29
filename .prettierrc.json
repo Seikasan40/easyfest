@@ -1,0 +1,23 @@
+{
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindFunctions": ["cn", "cva", "clsx", "twMerge"],
+  "overrides": [
+    {
+      "files": "*.sql",
+      "options": { "tabWidth": 2 }
+    },
+    {
+      "files": "*.md",
+      "options": { "proseWrap": "preserve", "printWidth": 120 }
+    }
+  ]
+}

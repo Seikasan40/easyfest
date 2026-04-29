@@ -1,0 +1,18 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@easyfest/db": ["../../packages/db/src/index.ts"],
+      "@easyfest/db/*": ["../../packages/db/src/*"],
+      "@easyfest/shared": ["../../packages/shared/src/index.ts"],
+      "@easyfest/shared/*": ["../../packages/shared/src/*"],
+      "@easyfest/ui": ["../../packages/ui/src/index.ts"],
+      "@easyfest/ui/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules", "dist", ".expo", ".turbo"]
+}

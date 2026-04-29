@@ -1,0 +1,50 @@
+[build]
+  base = "apps/vitrine"
+  command = "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @easyfest/vitrine build"
+  publish = "apps/vitrine/.next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "8.15.4"
+  NEXT_TELEMETRY_DISABLED = "1"
+  NODE_OPTIONS = "--max-old-space-size=4096"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  directory = "apps/vitrine/.netlify/functions"
+
+# Headers globaux (sécurité — doublonnent ceux de next.config en cas de bypass)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), geolocation=(self), microphone=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# Cache long terme assets statiques
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirect www → apex
+[[redirects]]
+  from = "https://www.easyfest.app/*"
+  to = "https://easyfest.app/:splat"
+  status = 301
+  force = true
+
+# Region
+[functions.environment]
+  NETLIFY_FUNCTIONS_REGION = "eu-west-1"
+
+# Branch deploys (preview par PR)
+[context.deploy-preview]
+  command = "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @easyfest/vitrine build"
+
+[context.production]
+  command = "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @easyfest/vitrine build"

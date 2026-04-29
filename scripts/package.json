@@ -1,0 +1,17 @@
+{
+  "name": "@easyfest/scripts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed-users": "tsx seed-users.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.2",
+    "typescript": "5.4.3"
+  }
+}

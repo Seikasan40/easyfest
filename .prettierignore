@@ -1,0 +1,15 @@
+node_modules
+.next
+.turbo
+.expo
+.eas
+dist
+build
+coverage
+pnpm-lock.yaml
+*.lock
+public
+.env*
+.netlify
+playwright-report
+test-results

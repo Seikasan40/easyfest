@@ -1,0 +1,145 @@
+import { formatDateTimeFr } from "@easyfest/shared";
+import { createServerClient } from "@/lib/supabase/server";
+
+interface PageProps {
+  params: Promise<{ orgSlug: string; eventSlug: string }>;
+}
+
+export default async function SaferPage({ params }: PageProps) {
+  const { eventSlug } = await params;
+  const supabase = createServerClient();
+
+  const { data: ev } = await supabase
+    .from("events")
+    .select("id")
+    .eq("slug", eventSlug)
+    .maybeSingle();
+  if (!ev) return null;
+
+  const [{ data: alerts }, { data: wellbeing }] = await Promise.all([
+    supabase
+      .from("safer_alerts")
+      .select(`
+        id, kind, status, description, location_hint, created_at,
+        reporter:reporter_user_id (raw_user_meta_data),
+        acknowledged_at, resolved_at
+      `)
+      .eq("event_id", ev.id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("wellbeing_reports")
+      .select(`
+        id, level, comment, created_at, acknowledged_at,
+        reporter:reporter_user_id (raw_user_meta_data)
+      `)
+      .eq("event_id", ev.id)
+      .in("level", ["yellow", "red"])
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h2 className="font-display text-2xl font-bold">Safer Space</h2>
+        <p className="text-sm text-brand-ink/60">
+          Suivi des alertes graves et des signaux de bien-être bénévoles.
+        </p>
+      </header>
+
+      <section>
+        <h3 className="mb-3 font-display text-lg font-semibold">🚨 Alertes graves</h3>
+        {(alerts ?? []).length === 0 ? (
+          <p className="rounded-xl bg-wellbeing-green/10 p-4 text-sm">✅ Aucune alerte enregistrée.</p>
+        ) : (
+          <ul className="space-y-2">
+            {(alerts ?? []).map((a: any) => (
+              <li
+                key={a.id}
+                className={`rounded-2xl border p-4 ${
+                  a.status === "open"
+                    ? "border-wellbeing-red bg-wellbeing-red/5"
+                    : "border-brand-ink/10 bg-white"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {alertEmoji(a.kind)} {a.kind}
+                      {a.location_hint && <span className="ml-2 text-brand-ink/60">· {a.location_hint}</span>}
+                    </p>
+                    {a.description && (
+                      <p className="mt-1 text-sm text-brand-ink/80">{a.description}</p>
+                    )}
+                    <p className="mt-1 text-xs text-brand-ink/50">{formatDateTimeFr(a.created_at)}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTone(a.status)}`}>
+                    {a.status}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h3 className="mb-3 font-display text-lg font-semibold">💚 Bien-être (jaune + rouge)</h3>
+        {(wellbeing ?? []).length === 0 ? (
+          <p className="rounded-xl bg-wellbeing-green/10 p-4 text-sm">
+            ✅ Tout le monde se sent bien (aucun jaune/rouge).
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {(wellbeing ?? []).map((w: any) => (
+              <li
+                key={w.id}
+                className={`flex items-center justify-between rounded-xl border p-3 text-sm ${
+                  w.level === "red"
+                    ? "border-wellbeing-red/40 bg-wellbeing-red/5"
+                    : "border-wellbeing-yellow/40 bg-wellbeing-yellow/5"
+                }`}
+              >
+                <div>
+                  <p className="font-medium">
+                    {w.level === "red" ? "🆘" : "😐"} {w.level === "red" ? "Détresse" : "Tendu"}
+                  </p>
+                  {w.comment && <p className="text-xs text-brand-ink/70">{w.comment}</p>}
+                  <p className="text-xs text-brand-ink/50">{formatDateTimeFr(w.created_at)}</p>
+                </div>
+                {w.acknowledged_at ? (
+                  <span className="rounded-full bg-wellbeing-green/15 px-2.5 py-0.5 text-xs font-medium text-wellbeing-green">
+                    Pris en compte
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-wellbeing-red/15 px-2.5 py-0.5 text-xs font-medium text-wellbeing-red">
+                    À traiter
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function alertEmoji(kind: string): string {
+  return (
+    { harassment: "🛑", physical_danger: "⚠️", medical: "🩺", wellbeing_red: "🆘", other: "❗" }[kind] ?? "❗"
+  );
+}
+
+function statusTone(status: string): string {
+  return (
+    {
+      open: "bg-wellbeing-red/15 text-wellbeing-red",
+      acknowledged: "bg-wellbeing-yellow/15 text-wellbeing-yellow",
+      in_progress: "bg-brand-coral/15 text-brand-coral",
+      resolved: "bg-wellbeing-green/15 text-wellbeing-green",
+      false_alarm: "bg-brand-ink/10 text-brand-ink/60",
+    }[status] ?? "bg-brand-ink/10 text-brand-ink/60"
+  );
+}

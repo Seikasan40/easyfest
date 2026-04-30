@@ -96,44 +96,78 @@ export async function submitVolunteerApplication(formData: FormData): Promise<Su
 
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
-    .from("volunteer_applications")
-    .insert({
-      event_id: eventId,
-      email,
-      full_name: `${firstName} ${lastName}`,
-      first_name: firstName,
-      last_name: lastName,
-      birth_date: birthDate,
-      is_minor: isMinor,
-      gender,
-      phone,
-      profession,
-      arrival_at: new Date(arrivalAt).toISOString(),
-      departure_at: new Date(departureAt).toISOString(),
-      size,
-      diet_notes: dietNotes,
-      has_vehicle: hasVehicle,
-      driving_license: drivingLicense,
-      preferred_position_slugs: preferredSlugs,
-      bio,
-      is_returning: isReturning,
-      consent_pii_at: consentPii ? new Date().toISOString() : null,
-      consent_charter_at: consentCharter ? new Date().toISOString() : null,
-      consent_anti_harass_at: consentAntiHarassment ? new Date().toISOString() : null,
-      consent_image_at: consentImage ? new Date().toISOString() : null,
-      privacy_policy_version_accepted: process.env["PRIVACY_POLICY_VERSION"] ?? "1.0.0",
-      source: "public_form",
-      turnstile_token: turnstileToken.substring(0, 100),
-      ip_address: ip === "unknown" ? null : ip,
-      user_agent: userAgent.substring(0, 500),
-    })
-    .select("id")
-    .single();
+  // Appel RPC SECURITY DEFINER (bypass RLS pour insert anonyme)
+  const payload = {
+    event_id: eventId,
+    email,
+    full_name: `${firstName} ${lastName}`,
+    first_name: firstName,
+    last_name: lastName,
+    birth_date: birthDate,
+    is_minor: isMinor,
+    gender,
+    phone,
+    profession,
+    arrival_at: new Date(arrivalAt).toISOString(),
+    departure_at: new Date(departureAt).toISOString(),
+    size,
+    diet_notes: dietNotes,
+    has_vehicle: hasVehicle,
+    driving_license: drivingLicense,
+    preferred_position_slugs: preferredSlugs,
+    bio,
+    is_returning: isReturning,
+    consent_pii_at: consentPii ? new Date().toISOString() : null,
+    consent_charter_at: consentCharter ? new Date().toISOString() : null,
+    consent_anti_harass_at: consentAntiHarassment ? new Date().toISOString() : null,
+    consent_image_at: consentImage ? new Date().toISOString() : null,
+    privacy_policy_version_accepted: process.env["PRIVACY_POLICY_VERSION"] ?? "1.0.0",
+    source: "public_form",
+    turnstile_token: turnstileToken.substring(0, 100),
+    ip_address: ip === "unknown" ? null : ip,
+    user_agent: userAgent.substring(0, 500),
+  };
+
+  const { data, error } = await supabase.rpc("submit_volunteer_application", { payload });
 
   if (error || !data) {
     return { ok: false, error: error?.message ?? "Erreur d'enregistrement" };
   }
 
-  return { ok: true, applicationId: data.id };
+  const applicationId = data as string;
+
+  // 2. Upload photo si fournie
+  const photoFile = formData.get("photoFile") as File | null;
+  if (photoFile && photoFile.size > 0) {
+    try {
+      const ext = photoFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const cleanExt = ["jpg", "jpeg", "png", "webp"].includes(ext) ? ext : "jpg";
+      const path = `applications/${eventId}/${applicationId}.${cleanExt}`;
+      const arrayBuffer = await photoFile.arrayBuffer();
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, new Uint8Array(arrayBuffer), {
+          contentType: photoFile.type || "image/jpeg",
+          upsert: true,
+        });
+      if (!upErr) {
+        // Récupère URL publique (bucket public) ou signed URL
+        const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+        if (pub?.publicUrl) {
+          // Update l'application avec avatar_url (best effort, on ignore si colonne absente)
+          await supabase
+            .from("volunteer_applications")
+            .update({ avatar_url: pub.publicUrl })
+            .eq("id", applicationId);
+        }
+      } else {
+        console.error("Upload avatar échoué:", upErr.message);
+      }
+    } catch (e) {
+      console.error("Erreur upload avatar:", e);
+      // Non-bloquant : on n'échoue pas la candidature pour une photo
+    }
+  }
+
+  return { ok: true, applicationId };
 }

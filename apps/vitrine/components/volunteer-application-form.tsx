@@ -38,6 +38,25 @@ export function VolunteerApplicationForm({
 
   // Form state minimal — un Server Action consomme le FormData entier en fin
   const [preferredPositions, setPreferredPositions] = useState<string[]>([]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Photo trop lourde (max 5 Mo). Compresse ton image et réessaye.");
+      e.target.value = "";
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setError(null);
+  }
 
   function togglePosition(slug: string) {
     setPreferredPositions((prev) => {
@@ -53,6 +72,7 @@ export function VolunteerApplicationForm({
     formData.append("organizationSlug", organizationSlug);
     formData.append("eventSlug", eventSlug);
     for (const slug of preferredPositions) formData.append("preferredPositionSlugs", slug);
+    if (photoFile) formData.set("photoFile", photoFile);
 
     startTransition(async () => {
       const result = await submitVolunteerApplication(formData);
@@ -111,6 +131,37 @@ export function VolunteerApplicationForm({
           <option value="NS">Préfère ne pas répondre</option>
         </Select>
         <Field label="Profession (optionnel)" name="profession" />
+
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium text-brand-ink">
+            Photo de profil (optionnel mais recommandé)
+            <span className="ml-1 text-xs font-normal text-brand-ink/60">— ça aide ton/ta responsable à te reconnaître</span>
+          </label>
+          <div className="flex items-center gap-3">
+            {photoPreview ? (
+              <img
+                src={photoPreview}
+                alt="Aperçu"
+                className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-coral/30"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-ink/8 text-2xl text-brand-ink/40">
+                📷
+              </div>
+            )}
+            <label className="flex-1 cursor-pointer">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+              <span className="inline-block rounded-lg border border-dashed border-brand-ink/25 bg-white px-3 py-2 text-sm text-brand-ink/70 hover:border-brand-coral hover:text-brand-coral">
+                {photoFile ? `📎 ${photoFile.name}` : "📤 Choisir une photo (JPG/PNG, max 5 Mo)"}
+              </span>
+            </label>
+          </div>
+        </div>
       </fieldset>
 
       {/* Étape 2 — Logistique */}

@@ -30,6 +30,17 @@ export default async function VolunteerHome({ params }: PageProps) {
 
   if (!ev) return <p>Événement introuvable</p>;
 
+  // Convention bénévolat signée ?
+  const { data: convention } = await supabase
+    .from("signed_engagements")
+    .select("id, signed_at")
+    .eq("user_id", userData.user.id)
+    .eq("event_id", ev.id)
+    .eq("engagement_kind", "convention_benevolat")
+    .order("signed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: nextAssignment } = await supabase
     .from("assignments")
     .select(
@@ -121,12 +132,39 @@ export default async function VolunteerHome({ params }: PageProps) {
         <h3 className="mb-2 text-sm font-medium uppercase tracking-widest text-brand-ink/50">
           Charte & engagements
         </h3>
-        <Link
-          href={`/v/${orgSlug}/${eventSlug}/charter`}
-          className="block rounded-xl border border-brand-ink/10 bg-white p-4 text-sm hover:bg-white"
-        >
-          📜 Relire la charte du festival et l'engagement anti-harcèlement
-        </Link>
+        <div className="space-y-2">
+          <Link
+            href={`/v/${orgSlug}/${eventSlug}/convention`}
+            className={`block rounded-xl border p-4 text-sm transition ${
+              convention
+                ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+                : "border-amber-300 bg-amber-50 ring-2 ring-amber-200 hover:bg-amber-100"
+            }`}
+          >
+            {convention ? (
+              <span className="flex items-center justify-between gap-2">
+                <span>📝 Convention de bénévolat signée</span>
+                <span className="text-xs font-semibold text-emerald-700">
+                  ✓ {new Date(convention.signed_at).toLocaleDateString("fr-FR")}
+                </span>
+              </span>
+            ) : (
+              <span className="flex items-center justify-between gap-2">
+                <span>
+                  <strong>📝 Convention de bénévolat à signer</strong>
+                  <span className="ml-1 text-xs text-amber-800">(obligatoire)</span>
+                </span>
+                <span className="text-xs font-semibold text-amber-800">→</span>
+              </span>
+            )}
+          </Link>
+          <Link
+            href={`/v/${orgSlug}/${eventSlug}/charter`}
+            className="block rounded-xl border border-brand-ink/10 bg-white p-4 text-sm hover:bg-white"
+          >
+            📜 Relire la charte du festival et l'engagement anti-harcèlement
+          </Link>
+        </div>
       </section>
     </div>
   );

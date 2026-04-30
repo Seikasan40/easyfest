@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { createBrowserClient } from "@/lib/supabase/browser";
 
 type Method = "magic" | "password";
 
 export function LoginForm() {
-  const router = useRouter();
   const sp = useSearchParams();
   const redirect = sp.get("redirect") ?? "/hub";
   const errorParam = sp.get("error_description");
@@ -38,7 +37,7 @@ export function LoginForm() {
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) setError(err.message);
-        else router.push(redirect);
+        else { window.location.href = redirect; }
       }
     });
   }

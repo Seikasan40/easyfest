@@ -168,6 +168,15 @@ export function VolunteerApplicationForm({
       <fieldset className={step === 2 ? "" : "hidden"} aria-hidden={step !== 2}>
         <Field label="Date+heure d'arrivée" name="arrivalAt" type="datetime-local" required />
         <Field label="Date+heure de départ" name="departureAt" type="datetime-local" required />
+
+        <div className="my-3 rounded-xl border border-brand-ink/10 bg-brand-cream/30 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-brand-ink/60">
+            Phases bonus
+          </p>
+          <Checkbox label="Je suis dispo pour le montage (J-2 / J-1)" name="availableSetup" />
+          <Checkbox label="Je suis dispo pour le démontage (J+1)" name="availableTeardown" />
+        </div>
+
         <Select label="Taille T-shirt" name="size">
           <option value="">—</option>
           {["XS", "S", "M", "L", "XL", "XXL"].map((s) => (
@@ -176,11 +185,28 @@ export function VolunteerApplicationForm({
             </option>
           ))}
         </Select>
+
+        <Select label="Régime alimentaire" name="dietType">
+          <option value="none">Aucun régime particulier</option>
+          <option value="vegetarian">Végétarien</option>
+          <option value="vegan">Végan</option>
+          <option value="gluten_free">Sans gluten</option>
+          <option value="no_pork">Sans porc</option>
+          <option value="other">Autre (à préciser ci-dessous)</option>
+        </Select>
+
         <Textarea
-          label="Allergies / régime alimentaire (data sensible — accès limité au catering)"
+          label="Allergies / précisions régime (data sensible — accès limité au catering)"
           name="dietNotes"
-          rows={3}
+          rows={2}
         />
+
+        <Select label="Covoiturage" name="carpool">
+          <option value="none">Pas concerné·e</option>
+          <option value="offering">Je propose des places dans mon véhicule</option>
+          <option value="seeking">Je cherche un trajet</option>
+        </Select>
+
         <Checkbox label="J'ai un véhicule" name="hasVehicle" />
         <Checkbox label="J'ai le permis B" name="drivingLicense" />
       </fieldset>

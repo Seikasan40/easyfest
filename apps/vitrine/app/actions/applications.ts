@@ -62,6 +62,10 @@ export async function submitVolunteerApplication(formData: FormData): Promise<Su
   const dietNotes = (formData.get("dietNotes") as string) || null;
   const hasVehicle = formData.get("hasVehicle") === "true";
   const drivingLicense = formData.get("drivingLicense") === "true";
+  const availableSetup = formData.get("availableSetup") === "true";
+  const availableTeardown = formData.get("availableTeardown") === "true";
+  const dietType = (formData.get("dietType") as string) || null;
+  const carpool = (formData.get("carpool") as string) || "none";
 
   const preferredSlugs = formData.getAll("preferredPositionSlugs") as string[];
 
@@ -114,6 +118,10 @@ export async function submitVolunteerApplication(formData: FormData): Promise<Su
     diet_notes: dietNotes,
     has_vehicle: hasVehicle,
     driving_license: drivingLicense,
+    available_setup: availableSetup,
+    available_teardown: availableTeardown,
+    diet_type: dietType,
+    carpool,
     preferred_position_slugs: preferredSlugs,
     bio,
     is_returning: isReturning,

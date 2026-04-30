@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { createBrowserClient } from "@/lib/supabase/browser";
+import { loginWithPassword, sendMagicLink } from "@/app/actions/auth";
 
 type Method = "magic" | "password";
 
@@ -16,28 +16,27 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(errorParam);
+  const [error, setError] = useState<string | null>(errorParam ? errorParam.replace(/\+/g, " ") : null);
   const [pending, startTransition] = useTransition();
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    startTransition(async () => {
-      const supabase = createBrowserClient();
+    const fd = new FormData();
+    fd.append("email", email);
+    fd.append("password", password);
+    fd.append("redirect", redirect);
 
+    startTransition(async () => {
       if (method === "magic") {
-        const { error: err } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
-          },
-        });
-        if (err) setError(err.message);
+        const res = await sendMagicLink(fd);
+        if (!res.ok) setError(res.error ?? "Erreur");
         else setSent(true);
       } else {
-        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-        if (err) setError(err.message);
-        else { window.location.href = redirect; }
+        const res = await loginWithPassword(fd);
+        // loginWithPassword fait un redirect() côté serveur en cas de succès
+        // donc on n'arrive ici qu'en cas d'erreur
+        if (res && !res.ok) setError(res.error ?? "Erreur");
       }
     });
   }
@@ -49,25 +48,16 @@ export function LoginForm() {
           Connexion à ton espace
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold">Salut 👋</h1>
-        <p className="mt-2 text-brand-ink/70">
-          Choisis ta méthode de connexion préférée.
-        </p>
+        <p className="mt-2 text-brand-ink/70">Choisis ta méthode de connexion préférée.</p>
       </div>
 
-      {/* Toggle méthode */}
       <div className="flex gap-1 rounded-xl bg-brand-ink/5 p-1">
-        <button
-          type="button"
-          onClick={() => { setMethod("password"); setSent(false); setError(null); }}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${method === "password" ? "bg-white shadow-soft" : "text-brand-ink/60"}`}
-        >
+        <button type="button" onClick={() => { setMethod("password"); setSent(false); setError(null); }}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${method === "password" ? "bg-white shadow-soft" : "text-brand-ink/60"}`}>
           🔑 Mot de passe
         </button>
-        <button
-          type="button"
-          onClick={() => { setMethod("magic"); setSent(false); setError(null); }}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${method === "magic" ? "bg-white shadow-soft" : "text-brand-ink/60"}`}
-        >
+        <button type="button" onClick={() => { setMethod("magic"); setSent(false); setError(null); }}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${method === "magic" ? "bg-white shadow-soft" : "text-brand-ink/60"}`}>
           ✨ Lien magique
         </button>
       </div>
@@ -79,52 +69,33 @@ export function LoginForm() {
           <p className="mt-1 text-sm text-brand-ink/70">
             On t'a envoyé un lien à <strong>{email}</strong>. Le lien est valable 1h.
           </p>
-          <p className="mt-3 text-xs text-brand-ink/50">
-            Pas reçu après 2 min ? Vérifie tes spams ou réessaye avec mot de passe.
-          </p>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-4">
           <label className="block">
             <span className="mb-1 block text-sm font-medium">Email</span>
-            <input
-              type="email"
-              required
-              autoFocus
-              autoComplete="email"
-              value={email}
+            <input type="email" required autoFocus autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
-              placeholder="ton@email.fr"
-            />
+              placeholder="ton@email.fr" />
           </label>
 
           {method === "password" && (
             <label className="block">
               <span className="mb-1 block text-sm font-medium">Mot de passe</span>
-              <input
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
+              <input type="password" required autoComplete="current-password" value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
-                placeholder="••••••••"
-              />
+                placeholder="••••••••" />
             </label>
           )}
 
           {error && (
-            <div className="rounded-xl bg-wellbeing-red/10 px-4 py-3 text-sm text-wellbeing-red">
-              {error.replace(/\+/g, " ")}
-            </div>
+            <div className="rounded-xl bg-wellbeing-red/10 px-4 py-3 text-sm text-wellbeing-red">{error}</div>
           )}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded-xl bg-brand-coral py-3 font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
-          >
+          <button type="submit" disabled={pending}
+            className="w-full rounded-xl bg-brand-coral py-3 font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50">
             {pending ? "Connexion…" : method === "magic" ? "M'envoyer le lien magique" : "Se connecter"}
           </button>
 

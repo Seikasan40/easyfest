@@ -1,4 +1,20 @@
 -- ====================================================================
+-- ELARGIT D'ABORD LE CHECK CONSTRAINT (sinon source='pam_import_2026' rejeté)
+-- ====================================================================
+alter table public.volunteer_applications
+  drop constraint if exists volunteer_applications_source_check;
+
+alter table public.volunteer_applications
+  add constraint volunteer_applications_source_check
+  check (source in (
+    'public_form',
+    'admin_manual',
+    'qr_referral',
+    'pam_import_2026',
+    'csv_import'
+  ));
+
+-- ====================================================================
 -- IMPORT 51 INSCRITS RÉELS PAM (RDL 2026)
 -- Source : Formulaire de candidature RDL (réponses).pdf — 23 mars 2026
 -- À coller dans Supabase Studio SQL Editor (idempotent : on conflict do nothing)

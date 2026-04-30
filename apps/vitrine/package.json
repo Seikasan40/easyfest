@@ -20,7 +20,7 @@
     "@easyfest/shared": "workspace:*",
     "@easyfest/ui": "workspace:*",
     "@sentry/nextjs": "^7.114.0",
-    "@supabase/ssr": "^0.3.0",
+    "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.43.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

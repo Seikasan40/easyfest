@@ -1,9 +1,5 @@
 "use client";
 
-/**
- * Helper Supabase côté browser (Client Components, hooks).
- * Anon key seulement. RLS protège tout.
- */
 import { createBrowserClient as createSsrBrowserClient } from "@supabase/ssr";
 
 import type { Database } from "@easyfest/db/types/database";

@@ -1,23 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient as createSsrClient } from "@supabase/ssr";
 
-const PROTECTED_PREFIXES = ["/v/", "/r/", "/staff/", "/regie/", "/admin/"];
+const PROTECTED_PREFIXES = ["/v/", "/r/", "/staff/", "/regie/", "/admin/", "/hub"];
 
 export async function middleware(req: NextRequest) {
-  // Maintenance mode (env)
-  if (
-    process.env["MAINTENANCE_MODE"] === "true" &&
-    !req.nextUrl.pathname.startsWith("/maintenance") &&
-    !req.nextUrl.pathname.startsWith("/api/")
-  ) {
+  if (process.env["MAINTENANCE_MODE"] === "true" && !req.nextUrl.pathname.startsWith("/maintenance") && !req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.redirect(new URL("/maintenance", req.url));
   }
 
   const path = req.nextUrl.pathname;
-  const needsAuth = PROTECTED_PREFIXES.some((p) => path.startsWith(p));
+  const needsAuth = PROTECTED_PREFIXES.some((p) => path === p || path.startsWith(p));
   if (!needsAuth) return NextResponse.next();
 
-  // Auth check via Supabase SSR
   const res = NextResponse.next();
   const url = process.env["NEXT_PUBLIC_SUPABASE_URL"];
   const anonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
@@ -25,9 +19,14 @@ export async function middleware(req: NextRequest) {
 
   const supabase = createSsrClient(url, anonKey, {
     cookies: {
-      getAll: () => req.cookies.getAll(),
-      setAll: (toSet) => {
-        for (const { name, value, options } of toSet) res.cookies.set(name, value, options);
+      getAll() {
+        return req.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          req.cookies.set(name, value);
+          res.cookies.set(name, value, options);
+        });
       },
     },
   });
@@ -43,7 +42,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|images|fonts|manifest.json|robots.txt).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|images|fonts|manifest.json|robots.txt).*)"],
 };

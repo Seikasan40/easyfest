@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "8.15.4"
+
+jobs:
+  lint-typecheck-test:
+    name: Lint + Typecheck + Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+  # Sécurité — pas de service_role_key dans le bundle client.
+  security-grep:
+    name: Security — no service_role_key in client bundles
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with: { version: ${{ env.PNPM_VERSION }} }
+      - uses: actions/setup-node@v4
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Build vitrine
+        run: pnpm --filter @easyfest/vitrine build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key
+          NEXT_PUBLIC_APP_URL: https://easyfest.app
+      - name: Grep for service_role leaks
+        run: |
+          if grep -RIn "SUPABASE_SERVICE_ROLE_KEY" apps/vitrine/.next/static apps/vitrine/.next/server 2>/dev/null | grep -v ".map$"; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY trouvé dans le bundle client. ABORT."
+            exit 1
+          fi
+          if grep -RIn "QR_HMAC_SECRET" apps/vitrine/.next/static 2>/dev/null; then
+            echo "::error::QR_HMAC_SECRET trouvé dans bundle client. ABORT."
+            exit 1
+          fi
+          echo "✅ Pas de secret leakée dans le bundle client."
+
+  # Playwright — 5 happy paths (signup, onboarding, RGPD, regie planning, staff scan).
+  e2e:
+    name: Playwright E2E (5 happy paths)
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with: { version: ${{ env.PNPM_VERSION }} }
+      - uses: actions/setup-node@v4
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @easyfest/vitrine exec playwright install --with-deps chromium
+      - name: Run Playwright
+        run: pnpm test:e2e
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: apps/vitrine/playwright-report
+          retention-days: 7
+
+  # OC-06+07 — upload sourcemaps Sentry sur push main uniquement.
+  # Skip silencieux si SENTRY_AUTH_TOKEN absent (pas configuré encore).
+  sentry-sourcemaps:
+    name: Sentry — upload sourcemaps
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with: { version: ${{ env.PNPM_VERSION }} }
+      - uses: actions/setup-node@v4
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Check Sentry secret
+        id: sentry_check
+        run: |
+          if [ -z "${{ secrets.SENTRY_AUTH_TOKEN }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::notice::SENTRY_AUTH_TOKEN absent — skip sourcemaps upload"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Build vitrine with sourcemaps
+        if: steps.sentry_check.outputs.skip == 'false'
+        run: pnpm --filter @easyfest/vitrine build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key
+          NEXT_PUBLIC_APP_URL: https://easyfest.app
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+      - name: Sentry CLI release
+        if: steps.sentry_check.outputs.skip == 'false'
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+        run: |
+          npx --yes @sentry/cli releases new "$GITHUB_SHA"
+          npx --yes @sentry/cli releases set-commits "$GITHUB_SHA" --auto
+          npx --yes @sentry/cli releases finalize "$GITHUB_SHA"

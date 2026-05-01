@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -60,4 +62,25 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry wrapping — sourcemaps upload uniquement si SENTRY_AUTH_TOKEN présent
+// (en local sans le token, le wrapping est silencieusement no-op).
+const sentryWebpackPluginOptions = {
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  hideSourceMaps: true,
+  disableLogger: true,
+};
+
+const sentryRuntimeOptions = {
+  widenClientFileUpload: true,
+  transpileClientSDK: true,
+  tunnelRoute: "/monitoring",
+  hideSourceMaps: true,
+  disableLogger: true,
+};
+
+export default process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions, sentryRuntimeOptions)
+  : nextConfig;

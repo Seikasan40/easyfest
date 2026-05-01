@@ -27,9 +27,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev",
+    // Cible vitrine spécifiquement — `pnpm dev` à la racine lance turbo run dev --parallel
+    // qui boote aussi Expo (mobile) et ralentit le démarrage des E2E.
+    command: "pnpm --filter @easyfest/vitrine dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env["CI"],
-    timeout: 60_000,
+    timeout: 90_000,
+    cwd: "../../",
   },
 });

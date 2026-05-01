@@ -76,3 +76,7 @@ GoogleService-Info.plist
 
 # scaffold tests
 .scaffold-test
+
+# supabase CLI local state (per-workspace)
+**/supabase/.branches/
+**/supabase/.temp/

@@ -9,12 +9,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { PH_EVENTS } from "@/lib/analytics/posthog-events";
+import { usePostHog } from "@/lib/analytics/usePostHog";
+
 type Props = {
   mode: "export" | "delete" | "restore";
 };
 
 export default function PrivacyActions({ mode }: Props) {
   const router = useRouter();
+  const { capture } = usePostHog();
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +45,7 @@ export default function PrivacyActions({ mode }: Props) {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+      capture(PH_EVENTS.ACCOUNT_EXPORT_DOWNLOADED);
     } catch (e) {
       setError((e as Error).message ?? "export_failed");
     } finally {
@@ -65,6 +70,7 @@ export default function PrivacyActions({ mode }: Props) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
+      capture(PH_EVENTS.ACCOUNT_DELETION_REQUESTED);
       router.push("/legal/privacy?account_deleted=1");
     } catch (e) {
       setError((e as Error).message ?? "delete_failed");
@@ -81,6 +87,7 @@ export default function PrivacyActions({ mode }: Props) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
+      capture(PH_EVENTS.ACCOUNT_DELETION_CANCELLED);
       router.refresh();
     } catch (e) {
       setError((e as Error).message ?? "restore_failed");

@@ -4,10 +4,12 @@
  * Wizard onboarding self-service direction (OC-01).
  * 5 étapes en client component, soumissions server actions à la fin.
  */
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { createOrganizationFromWizard, inviteTeamMembers } from "@/app/actions/org-creation";
+import { PH_EVENTS } from "@/lib/analytics/posthog-events";
+import { usePostHog } from "@/lib/analytics/usePostHog";
 
 type TemplateSummary = {
   slug: string;
@@ -57,9 +59,15 @@ function isoDateInputValue(date: Date): string {
 
 export default function OnboardingWizard({ templates }: Props) {
   const router = useRouter();
+  const { capture } = usePostHog();
   const [step, setStep] = useState(0);
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    capture(PH_EVENTS.ONBOARDING_STARTED);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Form state
   const [orgName, setOrgName] = useState("");
@@ -94,6 +102,7 @@ export default function OnboardingWizard({ templates }: Props) {
 
   function next() {
     setServerError(null);
+    capture(PH_EVENTS.ONBOARDING_STEP_COMPLETED, { step: STEPS[step]?.key });
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
   function back() {
@@ -130,6 +139,7 @@ export default function OnboardingWizard({ templates }: Props) {
       setCreatedEventId(res.event_id);
       setCreatedOrgSlug(res.org_slug);
       setCreatedEventSlug(res.event_slug);
+      capture(PH_EVENTS.ONBOARDING_ORG_CREATED, { template_slug: templateSlug });
       setStep(3); // → Équipe
     });
   }
@@ -147,6 +157,8 @@ export default function OnboardingWizard({ templates }: Props) {
           `Invitations partielles : ${res.invited} envoyées, ${res.errors.length} en erreur (${res.errors.map((e) => e.email).join(", ")}).`,
         );
       }
+      capture(PH_EVENTS.ONBOARDING_TEAM_INVITED, { count: res.invited });
+      capture(PH_EVENTS.ONBOARDING_DONE);
       // Avancer même en cas d'erreurs partielles — l'org est créée, l'utilisateur peut réessayer plus tard
       setStep(4);
     });

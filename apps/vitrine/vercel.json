@@ -2,8 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["cdg1"],
-  "installCommand": "corepack enable && corepack prepare pnpm@8.15.4 --activate && pnpm install --frozen-lockfile=false",
-  "buildCommand": "pnpm --filter @easyfest/vitrine build",
+  "installCommand": "npx --yes pnpm@8.15.4 install --frozen-lockfile=false",
+  "buildCommand": "npx --yes pnpm@8.15.4 --filter @easyfest/vitrine build",
   "headers": [
     {
       "source": "/brand/(.*)",

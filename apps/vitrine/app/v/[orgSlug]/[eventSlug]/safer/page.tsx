@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 
 import { createServerClient } from "@/lib/supabase/server";
 
+import { SaferAlertActions } from "./SaferAlertActions";
+
 export const dynamic = "force-dynamic";
 
 interface PageProps {
@@ -88,9 +90,31 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
         </p>
       </header>
 
-      <SectionGroup title="🔔 Mes alertes assignées" alerts={myAlerts} emptyText="Aucune alerte ne t'est assignée pour le moment." />
-      <SectionGroup title="🚨 Alertes ouvertes (à prendre en charge)" alerts={openAlerts} emptyText="Aucune alerte ouverte. Espace serein 💚" />
-      <SectionGroup title="📋 Historique récent" alerts={otherAlerts} emptyText="Pas d'historique sur ce festival." compact />
+      <SectionGroup
+        title="🔔 Mes alertes assignées"
+        alerts={myAlerts}
+        emptyText="Aucune alerte ne t'est assignée pour le moment."
+        currentUserId={userData.user.id}
+        orgSlug={orgSlug}
+        eventSlug={eventSlug}
+      />
+      <SectionGroup
+        title="🚨 Alertes ouvertes (à prendre en charge)"
+        alerts={openAlerts}
+        emptyText="Aucune alerte ouverte. Espace serein 💚"
+        currentUserId={userData.user.id}
+        orgSlug={orgSlug}
+        eventSlug={eventSlug}
+      />
+      <SectionGroup
+        title="📋 Historique récent"
+        alerts={otherAlerts}
+        emptyText="Pas d'historique sur ce festival."
+        compact
+        currentUserId={userData.user.id}
+        orgSlug={orgSlug}
+        eventSlug={eventSlug}
+      />
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <p className="font-semibold">⚠️ Urgence vitale</p>
@@ -107,11 +131,17 @@ function SectionGroup({
   alerts,
   emptyText,
   compact,
+  currentUserId,
+  orgSlug,
+  eventSlug,
 }: {
   title: string;
   alerts: AlertRow[];
   emptyText: string;
   compact?: boolean;
+  currentUserId: string;
+  orgSlug: string;
+  eventSlug: string;
 }) {
   return (
     <section>
@@ -125,7 +155,14 @@ function SectionGroup({
       ) : (
         <ul className="space-y-2">
           {alerts.map((a) => (
-            <AlertCard key={a.id} a={a} compact={compact} />
+            <AlertCard
+              key={a.id}
+              a={a}
+              compact={compact}
+              currentUserId={currentUserId}
+              orgSlug={orgSlug}
+              eventSlug={eventSlug}
+            />
           ))}
         </ul>
       )}
@@ -133,10 +170,24 @@ function SectionGroup({
   );
 }
 
-function AlertCard({ a, compact }: { a: AlertRow; compact?: boolean }) {
+function AlertCard({
+  a,
+  compact,
+  currentUserId,
+  orgSlug,
+  eventSlug,
+}: {
+  a: AlertRow;
+  compact?: boolean;
+  currentUserId: string;
+  orgSlug: string;
+  eventSlug: string;
+}) {
   const kind = KIND_LABEL[a.kind] ?? KIND_LABEL["other"]!;
   const status = STATUS_LABEL[a.status] ?? STATUS_LABEL["open"]!;
   const created = new Date(a.created_at);
+  const isMine = a.mediator_user_id === currentUserId;
+  const isOpen = a.status === "open" && a.mediator_user_id === null;
   return (
     <li className="rounded-xl border border-brand-ink/10 bg-white p-3 shadow-sm">
       <div className="flex items-start gap-2">
@@ -154,6 +205,16 @@ function AlertCard({ a, compact }: { a: AlertRow; compact?: boolean }) {
           )}
           {!compact && a.location_hint && (
             <p className="mt-0.5 text-[10px] text-brand-ink/60">📍 {a.location_hint}</p>
+          )}
+          {!compact && (isMine || isOpen) && (
+            <SaferAlertActions
+              alertId={a.id}
+              orgSlug={orgSlug}
+              eventSlug={eventSlug}
+              status={a.status}
+              isMine={isMine}
+              isOpen={isOpen}
+            />
           )}
         </div>
       </div>

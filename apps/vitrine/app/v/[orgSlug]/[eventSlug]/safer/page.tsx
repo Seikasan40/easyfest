@@ -45,19 +45,21 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect(`/auth/login?redirect=/v/${orgSlug}/${eventSlug}/safer`);
 
-  // Membership check : doit être is_mediator ou direction (sinon redirect /v/ standard)
-  const { data: membership } = await supabase
+  // ⚠️ Multi-memberships safe : un user peut avoir 2+ rôles actifs sur même event (cas Sandy : volunteer + volunteer_lead).
+  // On agrège is_mediator/direction OR sur toutes les memberships actives.
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role, is_mediator, event:event_id (id, name, slug, organization:organization_id (slug, name))")
     .eq("user_id", userData.user.id)
     .eq("is_active", true)
     .filter("event.slug", "eq", eventSlug)
-    .filter("event.organization.slug", "eq", orgSlug)
-    .maybeSingle();
+    .filter("event.organization.slug", "eq", orgSlug);
 
-  if (!membership) notFound();
+  const all = (memberships ?? []) as any[];
+  if (all.length === 0) notFound();
+  const membership = all[0];
   const m = membership as any;
-  const isMediator = m.is_mediator === true || m.role === "direction";
+  const isMediator = all.some((mb) => mb.is_mediator === true || mb.role === "direction");
   if (!isMediator) {
     // Volunteer normal : pas l'autorisation. Redirect vers son hub event.
     redirect(`/v/${orgSlug}/${eventSlug}`);

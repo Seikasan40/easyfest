@@ -9,15 +9,16 @@ async function checkPermission(eventId: string) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { ok: false as const, error: "Non authentifié" };
 
-  const { data: membership } = await supabase
+  // ⚠️ Multi-memberships safe : Pamela peut cumuler direction + volunteer_lead.
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role")
     .eq("user_id", userData.user.id)
     .eq("event_id", eventId)
-    .eq("is_active", true)
-    .maybeSingle();
+    .eq("is_active", true);
 
-  if (!membership || membership.role !== "direction") {
+  const isDirection = (memberships ?? []).some((m: any) => m.role === "direction");
+  if (!isDirection) {
     return { ok: false as const, error: "Réservé à la direction" };
   }
 

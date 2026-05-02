@@ -101,25 +101,30 @@ export async function inviteVolunteer(applicationId: string) {
     return { ok: false, error: "L'application doit être validée avant d'inviter" };
   }
 
-  // Vérifier permissions (direction ou volunteer_lead)
-  const { data: membership } = await supabase
+  // ⚠️ Multi-memberships safe : Sandy a volunteer + volunteer_lead → .maybeSingle() erroriait
+  // → bouton 📧 Inviter retournait Permission refusée. On agrège via .some().
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role")
     .eq("user_id", userData.user.id)
     .eq("event_id", app.event_id)
-    .eq("is_active", true)
-    .maybeSingle();
+    .eq("is_active", true);
 
-  if (!membership || !["direction", "volunteer_lead"].includes(membership.role)) {
+  const allowedRoles = ["direction", "volunteer_lead"];
+  const hasAccess = (memberships ?? []).some((m: any) => allowedRoles.includes(m.role));
+  if (!hasAccess) {
     return { ok: false, error: "Permission refusée" };
   }
 
-  // Envoyer le magic-link (signInWithOtp crée le user si manquant)
+  // Envoyer le magic-link (signInWithOtp crée le user si manquant).
+  // Fallback URL = easyfest.app (prod). NEXT_PUBLIC_APP_URL aligné avec onboard-self-serve.ts.
+  const baseUrl =
+    process.env["NEXT_PUBLIC_APP_URL"] ?? process.env["NEXT_PUBLIC_SITE_URL"] ?? "https://easyfest.app";
   const { error: otpErr } = await supabase.auth.signInWithOtp({
     email: app.email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${process.env["NEXT_PUBLIC_SITE_URL"] ?? "https://easyfest-rdl-2026.netlify.app"}/hub`,
+      emailRedirectTo: `${baseUrl}/hub`,
     },
   });
 

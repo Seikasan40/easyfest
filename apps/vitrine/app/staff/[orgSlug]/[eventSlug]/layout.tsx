@@ -15,22 +15,26 @@ export default async function StaffLayout({ children, params }: Props) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect(`/auth/login?redirect=/staff/${orgSlug}/${eventSlug}`);
 
-  // Vérifier rôle staff_scan ou supérieur OU is_entry_scanner
-  const { data: membership } = await supabase
+  // Vérifier rôle staff_scan ou supérieur OU is_entry_scanner.
+  // ⚠️ Multi-memberships safe : un user peut cumuler direction + staff_scan etc. → on
+  // récupère toutes les memberships actives et on agrège le check accès.
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role, is_entry_scanner, event:event_id (id, name, slug, organization:organization_id (id, slug, name))")
     .eq("user_id", userData.user.id)
     .eq("is_active", true)
-    .filter("event.slug", "eq", eventSlug)
-    .maybeSingle();
+    .filter("event.slug", "eq", eventSlug);
 
-  if (
-    !membership ||
-    (!["direction", "volunteer_lead", "post_lead", "staff_scan"].includes(membership.role) &&
-      !membership.is_entry_scanner)
-  ) {
+  const all = (memberships ?? []) as any[];
+  const allowedRoles = ["direction", "volunteer_lead", "post_lead", "staff_scan"];
+  const hasAccess = all.some(
+    (m) => allowedRoles.includes(m.role) || m.is_entry_scanner === true,
+  );
+  if (!hasAccess) {
     redirect(`/hub`);
   }
+  // On prend la 1ère membership pour les infos event/org (toutes pointent vers le même event).
+  const membership = all[0]!;
 
   const orgId = (membership as any).event?.organization?.id as string | undefined;
 

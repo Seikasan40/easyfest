@@ -12,16 +12,16 @@ export async function uploadFestivalPlan(formData: FormData) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { ok: false, error: "Non authentifié" };
 
-  // Permission direction
-  const { data: membership } = await supabase
+  // Permission direction (multi-memberships safe : Pamela peut être direction + volunteer)
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role")
     .eq("user_id", userData.user.id)
     .eq("event_id", eventId)
-    .eq("is_active", true)
-    .maybeSingle();
+    .eq("is_active", true);
 
-  if (!membership || membership.role !== "direction") {
+  const isDirection = (memberships ?? []).some((m: any) => m.role === "direction");
+  if (!isDirection) {
     return { ok: false, error: "Réservé à la direction" };
   }
 

@@ -32,21 +32,23 @@ async function checkMediatorAuth(eventSlug: string, orgSlug: string) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { ok: false as const, error: "Non authentifié" };
 
-  const { data: membership } = await supabase
+  // ⚠️ Multi-memberships safe : Sandy peut être volunteer + volunteer_lead, Pamela direction + volunteer.
+  // On récupère toutes les memberships actives et on agrège is_mediator || direction OR.
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role, is_mediator, event:event_id (id, slug, organization:organization_id (slug))")
     .eq("user_id", userData.user.id)
     .eq("is_active", true)
     .filter("event.slug", "eq", eventSlug)
-    .filter("event.organization.slug", "eq", orgSlug)
-    .maybeSingle();
+    .filter("event.organization.slug", "eq", orgSlug);
 
-  const m = membership as any;
-  if (!m) return { ok: false as const, error: "Membership inexistant" };
-  const isMediator = m.is_mediator === true || m.role === "direction";
+  const all = (memberships ?? []) as any[];
+  if (all.length === 0) return { ok: false as const, error: "Membership inexistant" };
+  const isMediator = all.some((mb) => mb.is_mediator === true || mb.role === "direction");
   if (!isMediator) return { ok: false as const, error: "Pas autorisé (mediator/direction requis)" };
+  const eventId = all.find((mb) => mb.event?.id)?.event?.id as string;
 
-  return { ok: true as const, userId: userData.user.id, eventId: m.event?.id as string };
+  return { ok: true as const, userId: userData.user.id, eventId };
 }
 
 export async function acknowledgeSaferAlert(input: AlertActionInput): Promise<ActionResult> {
@@ -89,7 +91,7 @@ export async function acknowledgeSaferAlert(input: AlertActionInput): Promise<Ac
 
   await admin.from("audit_log").insert({
     event_id: auth.eventId,
-    actor_user_id: auth.userId,
+    user_id: auth.userId,
     action: "safer.alert.acknowledged",
     payload: { alert_id: input.alertId },
   });
@@ -136,7 +138,7 @@ export async function resolveSaferAlert(input: AlertActionInput): Promise<Action
 
   await admin.from("audit_log").insert({
     event_id: auth.eventId,
-    actor_user_id: auth.userId,
+    user_id: auth.userId,
     action: "safer.alert.resolved",
     payload: { alert_id: input.alertId, notes: input.notes ?? null },
   });
@@ -183,7 +185,7 @@ export async function markFalseAlarmSaferAlert(input: AlertActionInput): Promise
 
   await admin.from("audit_log").insert({
     event_id: auth.eventId,
-    actor_user_id: auth.userId,
+    user_id: auth.userId,
     action: "safer.alert.false_alarm",
     payload: { alert_id: input.alertId, notes: input.notes ?? null },
   });

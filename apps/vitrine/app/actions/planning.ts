@@ -127,16 +127,18 @@ export async function assignVolunteerToTeam(input: AssignToTeamInput) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return { ok: false, error: "Non authentifié" };
 
-  // Vérifier permissions (direction ou volunteer_lead)
-  const { data: membership } = await supabase
+  // ⚠️ Multi-memberships safe : Sandy a volunteer + volunteer_lead → .maybeSingle()
+  // erroriait, retournant Permission refusée à chaque drag. On agrège via .some().
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role")
     .eq("user_id", userData.user.id)
     .eq("event_id", input.eventId)
-    .eq("is_active", true)
-    .maybeSingle();
+    .eq("is_active", true);
 
-  if (!membership || !["direction", "volunteer_lead"].includes(membership.role)) {
+  const allowedRoles = ["direction", "volunteer_lead"];
+  const hasAccess = (memberships ?? []).some((m: any) => allowedRoles.includes(m.role));
+  if (!hasAccess) {
     return { ok: false, error: "Permission refusée" };
   }
 

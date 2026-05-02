@@ -26,15 +26,20 @@ export default async function RegieLayout({ children, params }: Props) {
 
   const orgId = (ev as any).organization?.id as string | undefined;
 
-  const { data: membership } = await supabase
+  // ⚠️ Multi-memberships safe : un user peut avoir 2+ rôles actifs sur le même event
+  // (cas Sandy : volunteer + volunteer_lead). On récupère toutes les memberships
+  // actives et on vérifie qu'au moins une donne accès régie.
+  // Avant le 02/05/2026 : .maybeSingle() errorait silencieusement → redirect /hub.
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role")
     .eq("user_id", userData.user.id)
     .eq("event_id", ev.id)
-    .eq("is_active", true)
-    .maybeSingle();
+    .eq("is_active", true);
 
-  if (!membership || !["direction", "volunteer_lead"].includes(membership.role)) {
+  const allowedRoles = ["direction", "volunteer_lead"];
+  const hasAccess = (memberships ?? []).some((m: any) => allowedRoles.includes(m.role));
+  if (!hasAccess) {
     redirect("/hub");
   }
 

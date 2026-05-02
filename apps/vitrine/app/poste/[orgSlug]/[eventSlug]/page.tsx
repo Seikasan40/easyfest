@@ -139,15 +139,15 @@ export default async function PostePage({ params }: PageProps) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={p.avatar_url} alt="" className="h-11 w-11 rounded-full object-cover" />
                   ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-coral/15 text-sm font-semibold uppercase text-brand-coral">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 text-sm font-semibold uppercase text-[var(--theme-primary,_#FF5E5B)]">
                       {initials}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{p.full_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()}</p>
                     <div className="flex flex-wrap gap-x-3 text-xs text-brand-ink/60">
-                      {p.phone && <a href={`tel:${p.phone}`} className="hover:text-brand-coral">📞 {p.phone}</a>}
-                      {p.email && <a href={`mailto:${p.email}`} className="truncate hover:text-brand-coral">✉️ {p.email}</a>}
+                      {p.phone && <a href={`tel:${p.phone}`} className="hover:text-[var(--theme-primary,_#FF5E5B)]">📞 {p.phone}</a>}
+                      {p.email && <a href={`mailto:${p.email}`} className="truncate hover:text-[var(--theme-primary,_#FF5E5B)]">✉️ {p.email}</a>}
                     </div>
                   </div>
                 </article>
@@ -179,7 +179,7 @@ export default async function PostePage({ params }: PageProps) {
                     {dateFmt(s.starts_at)} → {dateFmt(s.ends_at)}
                   </p>
                 </div>
-                <span className="rounded-full bg-brand-coral/10 px-2 py-0.5 text-xs font-medium text-brand-coral">
+                <span className="rounded-full bg-[var(--theme-primary,_#FF5E5B)]/10 px-2 py-0.5 text-xs font-medium text-[var(--theme-primary,_#FF5E5B)]">
                   {s.needs_count} besoin{s.needs_count > 1 ? "s" : ""}
                 </span>
               </li>
@@ -191,7 +191,7 @@ export default async function PostePage({ params }: PageProps) {
       <div className="pt-2">
         <Link
           href={`/v/${orgSlug}/${eventSlug}/feed`}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-brand-coral px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:opacity-90"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:opacity-90"
           style={{ touchAction: "manipulation" }}
         >
           💬 Tchat équipe →

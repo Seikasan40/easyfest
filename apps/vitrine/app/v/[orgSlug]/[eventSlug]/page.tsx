@@ -195,7 +195,7 @@ export default async function VolunteerHome({ params }: PageProps) {
             </h3>
             <Link
               href={`/v/${orgSlug}/${eventSlug}/feed`}
-              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-brand-coral px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:opacity-90"
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:opacity-90"
               style={{ touchAction: "manipulation" }}
             >
               💬 Tchat équipe →
@@ -208,12 +208,12 @@ export default async function VolunteerHome({ params }: PageProps) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={teamLead.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover" />
               ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-coral/15 text-sm font-semibold uppercase text-brand-coral">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 text-sm font-semibold uppercase text-[var(--theme-primary,_#FF5E5B)]">
                   {leadInitials}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-coral">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-primary,_#FF5E5B)]">
                   Chef·fe d'équipe
                 </p>
                 <p className="truncate text-sm font-medium">
@@ -221,12 +221,12 @@ export default async function VolunteerHome({ params }: PageProps) {
                 </p>
                 <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-brand-ink/60">
                   {teamLead.phone && (
-                    <a href={`tel:${teamLead.phone}`} className="hover:text-brand-coral">
+                    <a href={`tel:${teamLead.phone}`} className="hover:text-[var(--theme-primary,_#FF5E5B)]">
                       📞 {teamLead.phone}
                     </a>
                   )}
                   {teamLead.email && (
-                    <a href={`mailto:${teamLead.email}`} className="truncate hover:text-brand-coral">
+                    <a href={`mailto:${teamLead.email}`} className="truncate hover:text-[var(--theme-primary,_#FF5E5B)]">
                       ✉️ {teamLead.email}
                     </a>
                   )}

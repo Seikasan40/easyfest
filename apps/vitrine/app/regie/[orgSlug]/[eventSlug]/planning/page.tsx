@@ -43,6 +43,25 @@ export default async function RegiePlanningPage({ params, searchParams }: PagePr
 
   const userIds = (members ?? []).map((m: any) => m.user_id);
 
+  // 2b. ⚠️ Toutes les memberships actives (tous rôles) pour exclure les non-volunteers
+  // (direction, post_lead, volunteer_lead, staff_scan) du pool "à placer".
+  // Sinon Pamela (direction) avec une candidature validée à elle-même apparaît comme
+  // pending_account=true alors qu'elle a un compte → curseur rouge + faux bouton Inviter.
+  const { data: allMemberships } = await supabase
+    .from("memberships")
+    .select(`
+      user_id,
+      profile:volunteer_profiles!memberships_user_id_fkey (email)
+    `)
+    .eq("event_id", ev.id)
+    .eq("is_active", true);
+
+  const allMemberEmails = new Set(
+    (allMemberships ?? [])
+      .map((m: any) => (m.profile?.email ?? "").toLowerCase())
+      .filter(Boolean),
+  );
+
   // 3. Récupérer les emails des users pour matcher avec volunteer_applications
   const { data: applications } = await supabase
     .from("volunteer_applications")
@@ -109,11 +128,22 @@ export default async function RegiePlanningPage({ params, searchParams }: PagePr
     };
   });
 
-  // 6b. Pré-bénévoles : applications validées qui n'ont pas encore de membership
-  // (= compte pas créé, ils se connecteront via magic-link plus tard)
-  const memberEmails = new Set((members ?? []).map((m: any) => (m.profile?.email ?? "").toLowerCase()).filter(Boolean));
+  // 6b. Pré-bénévoles : applications validées qui n'ont AUCUNE membership active
+  // (tous rôles confondus). Si quelqu'un est direction / post_lead / volunteer_lead,
+  // on l'exclut du pool car son compte existe déjà — il n'a pas besoin d'être "invité".
+  // Dédup par email : si le même email a plusieurs applications validées, on garde
+  // seulement la 1ère (sinon doublons visuels dans le pool).
+  const seenEmails = new Set<string>();
   const preVolunteers = (applications ?? [])
-    .filter((app: any) => app.status === "validated" && !memberEmails.has((app.email ?? "").toLowerCase()))
+    .filter((app: any) => {
+      if (app.status !== "validated") return false;
+      const email = (app.email ?? "").toLowerCase();
+      if (!email) return false;
+      if (allMemberEmails.has(email)) return false;
+      if (seenEmails.has(email)) return false;
+      seenEmails.add(email);
+      return true;
+    })
     .map((app: any) => ({
       user_id: `pre-${app.email}`,
       full_name: app.full_name ?? app.email ?? "—",

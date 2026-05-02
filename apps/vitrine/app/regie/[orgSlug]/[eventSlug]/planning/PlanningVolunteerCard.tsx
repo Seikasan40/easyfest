@@ -26,9 +26,12 @@ interface Props {
 
 export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Props) {
   const { openMenu, onInviteRequest } = useAssign();
+  // ⚠️ Drag activé pour TOUS, y compris pending_account (pre-volunteers).
+  // Pam pré-assigne les équipes avant que les bénévoles aient activé leur compte ;
+  // assignVolunteerToTeam détecte le préfixe "pre-" et affiche un message clair invitant
+  // à utiliser le bouton 📧 Inviter dans /candidatures pour finaliser leur compte.
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `v-${v.user_id}`,
-    disabled: v.pending_account,
   });
 
   // Trigger commun pour tap mobile + long-press desktop
@@ -117,16 +120,12 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
       role="button"
       tabIndex={0}
       aria-label={`Bénévole ${v.full_name}. Touche pour assigner.`}
-      className={`group relative rounded-lg border bg-white p-2 text-xs shadow-sm transition select-none ${
-        v.pending_account
-          ? "cursor-not-allowed border-blue-200 bg-blue-50/30 opacity-80"
-          : "cursor-grab active:cursor-grabbing"
+      className={`group relative rounded-lg border bg-white p-2 text-xs shadow-sm transition select-none cursor-grab active:cursor-grabbing ${
+        v.pending_account ? "border-blue-200 bg-blue-50/30 opacity-80" : ""
       } ${
         isDragging
           ? "border-[var(--theme-primary,_#FF5E5B)] shadow-glow ring-2 ring-[var(--theme-primary,_#FF5E5B)]/30"
-          : v.pending_account
-            ? ""
-            : "border-brand-ink/10 hover:border-[var(--theme-primary,_#FF5E5B)]/40 hover:shadow"
+          : "border-brand-ink/10 hover:border-[var(--theme-primary,_#FF5E5B)]/40 hover:shadow"
       }`}
     >
       <div className="flex items-start gap-2">

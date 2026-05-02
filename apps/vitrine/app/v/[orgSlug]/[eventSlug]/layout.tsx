@@ -21,7 +21,7 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
   // Patch P1 : avant ce check, l'UI exposait le nom de l'org + nom event a tout user authentifie.
   const { data: membership } = await supabase
     .from("memberships")
-    .select("role, event:event_id (id, name, slug, organization:organization_id (id, slug, name))")
+    .select("role, is_mediator, event:event_id (id, name, slug, organization:organization_id (id, slug, name))")
     .eq("user_id", userData.user.id)
     .eq("is_active", true)
     .filter("event.slug", "eq", eventSlug)
@@ -32,8 +32,10 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
     redirect(`/hub`);
   }
 
-  const ev = (membership as any).event;
+  const m = membership as any;
+  const ev = m.event;
   const orgId = ev?.organization?.id as string | undefined;
+  const isMediator = m.is_mediator === true || m.role === "direction";
 
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
@@ -62,12 +64,19 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
 
         <main className="flex-1 overflow-y-auto px-4 py-4">{children}</main>
 
-        <nav className="sticky bottom-0 z-10 grid grid-cols-5 border-t border-brand-ink/10 bg-white/95 px-2 py-1.5 backdrop-blur">
+        <nav
+          className={`sticky bottom-0 z-10 grid ${
+            isMediator ? "grid-cols-6" : "grid-cols-5"
+          } border-t border-brand-ink/10 bg-white/95 px-2 py-1.5 backdrop-blur`}
+        >
           <NavItem href={`/v/${orgSlug}/${eventSlug}`} label="Accueil" emoji="🏠" />
           <NavItem href={`/v/${orgSlug}/${eventSlug}/qr`} label="Mon QR" emoji="🎟️" />
           <NavItem href={`/v/${orgSlug}/${eventSlug}/planning`} label="Planning" emoji="🗓️" />
           <NavItem href={`/v/${orgSlug}/${eventSlug}/wellbeing`} label="Bien-être" emoji="💚" />
           <NavItem href={`/v/${orgSlug}/${eventSlug}/feed`} label="Fil" emoji="📣" />
+          {isMediator && (
+            <NavItem href={`/v/${orgSlug}/${eventSlug}/safer`} label="Safer" emoji="🛡️" />
+          )}
         </nav>
       </div>
     </TenantThemeProvider>

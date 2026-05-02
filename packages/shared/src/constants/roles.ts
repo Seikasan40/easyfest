@@ -59,7 +59,7 @@ export const ROLE_DEFINITIONS: Record<RoleKind, RoleDefinition> = {
     label: "Je suis resp. de poste",
     shortLabel: "Resp. de poste",
     subtitleTemplate: "{firstName} · {positionName} — son équipe seulement",
-    routePrefix: "/r",
+    routePrefix: "/poste",
     hierarchy: 3,
     canModerate: false,
     canValidateApplications: false,

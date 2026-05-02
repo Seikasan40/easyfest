@@ -36,7 +36,7 @@ const TIER_LABEL: Record<string, { label: string; color: string }> = {
   silver: { label: "Silver", color: "text-gray-500" },
   gold: { label: "Gold", color: "text-yellow-600" },
   platinum: { label: "Platinum", color: "text-blue-600" },
-  partner: { label: "Partenaire", color: "text-brand-coral" },
+  partner: { label: "Partenaire", color: "text-[var(--theme-primary,_#FF5E5B)]" },
 };
 
 export function SponsorsBoard({ sponsors, eventId }: { sponsors: Sponsor[]; eventId: string }) {
@@ -105,7 +105,7 @@ export function SponsorsBoard({ sponsors, eventId }: { sponsors: Sponsor[]; even
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Recherche nom, contact…"
-          className="flex-1 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none"
+          className="flex-1 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
         />
         <button
           type="button"
@@ -113,7 +113,7 @@ export function SponsorsBoard({ sponsors, eventId }: { sponsors: Sponsor[]; even
             setEditingSponsor(null);
             setShowAddModal(true);
           }}
-          className="rounded-xl bg-brand-coral px-4 py-2 text-sm font-semibold text-white shadow-glow hover:bg-brand-coral/90"
+          className="rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-4 py-2 text-sm font-semibold text-white shadow-glow hover:bg-[var(--theme-primary,_#FF5E5B)] hover:opacity-90"
         >
           + Ajouter
         </button>
@@ -157,7 +157,7 @@ export function SponsorsBoard({ sponsors, eventId }: { sponsors: Sponsor[]; even
                     <div className="text-brand-ink/70">
                       {s.contact_name && <p className="font-semibold">{s.contact_name}</p>}
                       {s.contact_email && (
-                        <a href={`mailto:${s.contact_email}`} className="text-brand-coral hover:underline">
+                        <a href={`mailto:${s.contact_email}`} className="text-[var(--theme-primary,_#FF5E5B)] hover:underline">
                           {s.contact_email}
                         </a>
                       )}
@@ -353,7 +353,7 @@ function SponsorModal({
             <button
               type="submit"
               disabled={pending}
-              className="flex-1 rounded-xl bg-brand-coral py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="flex-1 rounded-xl bg-[var(--theme-primary,_#FF5E5B)] py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {pending ? "…" : sponsor ? "Enregistrer" : "Créer"}
             </button>
@@ -388,7 +388,7 @@ function Field({
         defaultValue={defaultValue}
         required={required}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-brand-coral focus:outline-none"
+        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
       />
     </label>
   );
@@ -411,7 +411,7 @@ function SelectField({
       <select
         name={name}
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-brand-coral focus:outline-none"
+        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
       >
         {children}
       </select>
@@ -440,7 +440,7 @@ function TextareaField({
         defaultValue={defaultValue}
         rows={rows}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-brand-coral focus:outline-none"
+        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
       />
     </label>
   );

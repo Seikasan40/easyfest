@@ -56,7 +56,7 @@ export default async function FeedPage({ params }: PageProps) {
                   {(m as any).channel?.kind ?? "team"}
                 </span>
                 {m.is_broadcast && (
-                  <span className="rounded-full bg-brand-coral/15 px-2 py-0.5 font-medium text-brand-coral">
+                  <span className="rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 px-2 py-0.5 font-medium text-[var(--theme-primary,_#FF5E5B)]">
                     📣 diffusion
                   </span>
                 )}

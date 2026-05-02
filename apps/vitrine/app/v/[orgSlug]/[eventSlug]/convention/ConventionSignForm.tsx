@@ -48,12 +48,12 @@ export function ConventionSignForm({ eventId, version, fullName }: Props) {
         </p>
       </div>
 
-      <label className="flex items-start gap-3 rounded-lg border border-brand-ink/10 bg-white p-3 cursor-pointer hover:border-brand-coral/40">
+      <label className="flex items-start gap-3 rounded-lg border border-brand-ink/10 bg-white p-3 cursor-pointer hover:border-[var(--theme-primary,_#FF5E5B)]/40">
         <input
           type="checkbox"
           checked={acceptCharter}
           onChange={(e) => setAcceptCharter(e.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-brand-coral"
+          className="mt-0.5 h-4 w-4 accent-[var(--theme-primary,_#FF5E5B)]"
           required
         />
         <span className="text-sm">
@@ -62,12 +62,12 @@ export function ConventionSignForm({ eventId, version, fullName }: Props) {
         </span>
       </label>
 
-      <label className="flex items-start gap-3 rounded-lg border border-brand-ink/10 bg-white p-3 cursor-pointer hover:border-brand-coral/40">
+      <label className="flex items-start gap-3 rounded-lg border border-brand-ink/10 bg-white p-3 cursor-pointer hover:border-[var(--theme-primary,_#FF5E5B)]/40">
         <input
           type="checkbox"
           checked={acceptImage}
           onChange={(e) => setAcceptImage(e.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-brand-coral"
+          className="mt-0.5 h-4 w-4 accent-[var(--theme-primary,_#FF5E5B)]"
         />
         <span className="text-sm text-brand-ink/80">
           <strong>(Optionnel)</strong> J'autorise l'utilisation de mon image dans le cadre de la
@@ -82,7 +82,7 @@ export function ConventionSignForm({ eventId, version, fullName }: Props) {
       <button
         type="submit"
         disabled={!canSign || pending}
-        className="w-full rounded-xl bg-brand-coral px-4 py-3 font-display text-base font-semibold text-white shadow-glow transition hover:bg-brand-coral/90 disabled:cursor-not-allowed disabled:bg-brand-ink/20 disabled:text-white/60 disabled:shadow-none"
+        className="w-full rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-4 py-3 font-display text-base font-semibold text-white shadow-glow transition hover:bg-[var(--theme-primary,_#FF5E5B)] hover:opacity-90 disabled:cursor-not-allowed disabled:bg-brand-ink/20 disabled:text-white/60 disabled:shadow-none"
       >
         {pending ? "Signature en cours…" : "Signer électroniquement la convention"}
       </button>

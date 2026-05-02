@@ -137,7 +137,7 @@ function statusTone(status: string): string {
     {
       open: "bg-wellbeing-red/15 text-wellbeing-red",
       acknowledged: "bg-wellbeing-yellow/15 text-wellbeing-yellow",
-      in_progress: "bg-brand-coral/15 text-brand-coral",
+      in_progress: "bg-[var(--theme-primary,_#FF5E5B)]/15 text-[var(--theme-primary,_#FF5E5B)]",
       resolved: "bg-wellbeing-green/15 text-wellbeing-green",
       false_alarm: "bg-brand-ink/10 text-brand-ink/60",
     }[status] ?? "bg-brand-ink/10 text-brand-ink/60"

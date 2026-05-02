@@ -64,7 +64,7 @@ export default async function MessagesPage({ params }: PageProps) {
                     {m.channel?.kind} · {m.channel?.name}
                   </span>
                   {m.is_broadcast && (
-                    <span className="rounded-full bg-brand-coral/15 px-2 py-0.5 font-medium text-brand-coral">
+                    <span className="rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 px-2 py-0.5 font-medium text-[var(--theme-primary,_#FF5E5B)]">
                       📣 diffusion
                     </span>
                   )}

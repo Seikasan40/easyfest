@@ -22,7 +22,7 @@ export default async function PlanSitePage({ params }: PageProps) {
     <div className="space-y-4">
       <Link
         href={`/v/${orgSlug}/${eventSlug}`}
-        className="inline-flex items-center gap-1 text-xs text-brand-ink/60 hover:text-brand-coral"
+        className="inline-flex items-center gap-1 text-xs text-brand-ink/60 hover:text-[var(--theme-primary,_#FF5E5B)]"
       >
         ← Retour
       </Link>

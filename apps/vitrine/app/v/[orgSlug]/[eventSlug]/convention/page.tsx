@@ -60,13 +60,13 @@ export default async function ConventionPage({ params }: PageProps) {
     <div className="mx-auto max-w-3xl px-4 py-6">
       <Link
         href={`/v/${orgSlug}/${eventSlug}`}
-        className="mb-4 inline-flex items-center gap-1 text-xs text-brand-ink/60 hover:text-brand-coral"
+        className="mb-4 inline-flex items-center gap-1 text-xs text-brand-ink/60 hover:text-[var(--theme-primary,_#FF5E5B)]"
       >
         ← Retour
       </Link>
       <article className="rounded-2xl border border-brand-ink/10 bg-white p-6 shadow-soft md:p-8">
         <header className="mb-6 border-b border-brand-ink/10 pb-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-brand-coral">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--theme-primary,_#FF5E5B)]">
             {orgName}
           </p>
           <h1 className="mt-1 font-display text-2xl font-bold leading-tight md:text-3xl">

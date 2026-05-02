@@ -35,7 +35,7 @@ export function PlanUploadForm({ eventId, currentPlanUrl, currentDarkUrl, curren
           type="file"
           name="planFile"
           accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-coral file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-[var(--theme-primary,_#FF5E5B)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
         />
         <p className="mt-1 text-xs text-brand-ink/50">
           Format recommandé : PNG ou WebP, max 10 Mo, ratio 16:9 ou 4:3.
@@ -51,7 +51,7 @@ export function PlanUploadForm({ eventId, currentPlanUrl, currentDarkUrl, curren
           type="file"
           name="planDarkFile"
           accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-coral file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-[var(--theme-primary,_#FF5E5B)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
         />
       </div>
 
@@ -64,7 +64,7 @@ export function PlanUploadForm({ eventId, currentPlanUrl, currentDarkUrl, curren
           name="caption"
           defaultValue={currentCaption ?? ""}
           placeholder="ex: Plan officiel Roots du Lac 2026 — version validée mairie"
-          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none"
+          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
         />
       </div>
 
@@ -81,7 +81,7 @@ export function PlanUploadForm({ eventId, currentPlanUrl, currentDarkUrl, curren
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-brand-coral py-2.5 font-display text-sm font-semibold text-white shadow-glow disabled:opacity-50"
+        className="w-full rounded-xl bg-[var(--theme-primary,_#FF5E5B)] py-2.5 font-display text-sm font-semibold text-white shadow-glow disabled:opacity-50"
       >
         {pending ? "Upload en cours…" : "Sauvegarder"}
       </button>

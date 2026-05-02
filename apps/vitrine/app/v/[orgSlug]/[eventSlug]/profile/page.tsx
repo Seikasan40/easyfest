@@ -56,7 +56,7 @@ export default async function VolunteerProfilePage({ params }: PageProps) {
     <div className="space-y-4">
       <Link
         href={`/v/${orgSlug}/${eventSlug}`}
-        className="inline-flex items-center gap-1 text-xs text-brand-ink/60 hover:text-brand-coral"
+        className="inline-flex items-center gap-1 text-xs text-brand-ink/60 hover:text-[var(--theme-primary,_#FF5E5B)]"
       >
         ← Retour
       </Link>
@@ -67,10 +67,10 @@ export default async function VolunteerProfilePage({ params }: PageProps) {
             <img
               src={profile.avatar_url}
               alt=""
-              className="h-20 w-20 flex-none rounded-full object-cover ring-4 ring-brand-coral/20"
+              className="h-20 w-20 flex-none rounded-full object-cover ring-4 ring-[var(--theme-primary,_#FF5E5B)]/20"
             />
           ) : (
-            <div className="flex h-20 w-20 flex-none items-center justify-center rounded-full bg-brand-coral/15 text-3xl font-bold text-brand-coral">
+            <div className="flex h-20 w-20 flex-none items-center justify-center rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 text-3xl font-bold text-[var(--theme-primary,_#FF5E5B)]">
               {(profile.first_name?.[0] ?? profile.full_name?.[0] ?? "?").toUpperCase()}
             </div>
           )}
@@ -109,7 +109,7 @@ export default async function VolunteerProfilePage({ params }: PageProps) {
               {app.preferred_position_slugs.map((slug: string, i: number) => (
                 <li
                   key={slug}
-                  className="rounded-full bg-brand-coral/10 px-3 py-1 text-sm font-medium text-brand-coral"
+                  className="rounded-full bg-[var(--theme-primary,_#FF5E5B)]/10 px-3 py-1 text-sm font-medium text-[var(--theme-primary,_#FF5E5B)]"
                 >
                   #{i + 1} {slug}
                 </li>

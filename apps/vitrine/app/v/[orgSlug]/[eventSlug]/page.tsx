@@ -14,7 +14,7 @@ export default async function VolunteerHome({ params }: PageProps) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
 
-  // Récupérer profil + prochain shift
+  // Récupérer profil + event
   const [{ data: profile }, { data: ev }] = await Promise.all([
     supabase
       .from("volunteer_profiles")
@@ -29,17 +29,53 @@ export default async function VolunteerHome({ params }: PageProps) {
   ]);
 
   if (!ev) return <p>Événement introuvable</p>;
+  const eventRow: any = ev;
 
   // Convention bénévolat signée ?
   const { data: convention } = await supabase
     .from("signed_engagements")
     .select("id, signed_at")
     .eq("user_id", userData.user.id)
-    .eq("event_id", ev.id)
+    .eq("event_id", eventRow.id)
     .eq("engagement_kind", "convention_benevolat")
     .order("signed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  // Membership active du bénévole : on lit sa position_id pour identifier son équipe
+  const { data: ownMembership } = await (supabase as any)
+    .from("memberships")
+    .select("position_id, role")
+    .eq("user_id", userData.user.id)
+    .eq("event_id", eventRow.id)
+    .eq("is_active", true)
+    .order("role", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  // Position info + chef d'équipe (post_lead partageant la même position_id)
+  let position: any = null;
+  let teamLead: any = null;
+  if (ownMembership?.position_id) {
+    const [posRes, leadRes] = await Promise.all([
+      (supabase as any)
+        .from("positions")
+        .select("id, slug, name, color, icon")
+        .eq("id", ownMembership.position_id)
+        .maybeSingle(),
+      (supabase as any)
+        .from("memberships")
+        .select("user_id, profiles:user_id (id, first_name, last_name, full_name, email, phone, avatar_url)")
+        .eq("event_id", eventRow.id)
+        .eq("position_id", ownMembership.position_id)
+        .eq("role", "post_lead")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    position = posRes.data;
+    teamLead = (leadRes.data as any)?.profiles ?? null;
+  }
 
   const { data: nextAssignment } = await supabase
     .from("assignments")
@@ -61,11 +97,14 @@ export default async function VolunteerHome({ params }: PageProps) {
   const { count: mealsRemaining } = await supabase
     .from("meal_allowances")
     .select("*", { count: "exact", head: true })
-    .eq("event_id", ev.id)
+    .eq("event_id", eventRow.id)
     .eq("volunteer_user_id", userData.user.id)
     .is("served_at", null);
 
   const firstName = profile?.first_name ?? profile?.full_name?.split(" ")[0] ?? "bénévole";
+  const leadInitials = teamLead
+    ? (teamLead.first_name?.[0] ?? "?") + (teamLead.last_name?.[0] ?? "")
+    : "";
 
   return (
     <div className="space-y-4">
@@ -86,13 +125,13 @@ export default async function VolunteerHome({ params }: PageProps) {
           <p className="mt-1 text-sm text-brand-ink/70">
             {formatDateTimeFr((nextAssignment as any).shift?.starts_at)}
           </p>
-          <p className="text-xs font-medium text-brand-coral">
+          <p className="text-xs font-medium text-[var(--theme-primary,_#FF5E5B)]">
             {timeFromNow((nextAssignment as any).shift?.starts_at)}
           </p>
           <div className="mt-4 flex gap-2">
             <Link
               href={`/v/${orgSlug}/${eventSlug}/qr`}
-              className="flex-1 rounded-xl bg-brand-coral px-4 py-2 text-center text-sm font-medium text-white"
+              className="flex-1 rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-4 py-2 text-center text-sm font-medium text-white"
             >
               Afficher mon QR
             </Link>
@@ -145,6 +184,62 @@ export default async function VolunteerHome({ params }: PageProps) {
           </p>
         </Link>
       </section>
+
+      {/* Mon équipe — chef·fe d'équipe + tchat (audit Pam P0 vague 3) */}
+      {position && (
+        <section className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="flex items-center gap-2 text-sm font-medium uppercase tracking-widest text-brand-ink/50">
+              <span aria-hidden="true">{position.icon ?? "👥"}</span>
+              <span>Mon équipe — {position.name}</span>
+            </h3>
+            <Link
+              href={`/v/${orgSlug}/${eventSlug}/feed`}
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-brand-coral px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:opacity-90"
+              style={{ touchAction: "manipulation" }}
+            >
+              💬 Tchat équipe →
+            </Link>
+          </div>
+
+          {teamLead ? (
+            <article className="flex items-center gap-3 rounded-2xl border border-brand-ink/10 bg-white p-3">
+              {teamLead.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={teamLead.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-coral/15 text-sm font-semibold uppercase text-brand-coral">
+                  {leadInitials}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-coral">
+                  Chef·fe d'équipe
+                </p>
+                <p className="truncate text-sm font-medium">
+                  {teamLead.full_name ?? `${teamLead.first_name ?? ""} ${teamLead.last_name ?? ""}`.trim()}
+                </p>
+                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-brand-ink/60">
+                  {teamLead.phone && (
+                    <a href={`tel:${teamLead.phone}`} className="hover:text-brand-coral">
+                      📞 {teamLead.phone}
+                    </a>
+                  )}
+                  {teamLead.email && (
+                    <a href={`mailto:${teamLead.email}`} className="truncate hover:text-brand-coral">
+                      ✉️ {teamLead.email}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </article>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-brand-ink/15 bg-white/50 p-3 text-xs text-brand-ink/55">
+              Pas encore de chef·fe d'équipe désigné·e. La régie va affecter quelqu'un sous peu — en attendant, contacte la direction du festival si besoin.
+            </p>
+          )}
+        </section>
+      )}
 
       <section>
         <h3 className="mb-2 text-sm font-medium uppercase tracking-widest text-brand-ink/50">

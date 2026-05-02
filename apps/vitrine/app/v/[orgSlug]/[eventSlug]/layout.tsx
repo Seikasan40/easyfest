@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
+import { TenantThemeProvider } from "@/components/TenantThemeProvider";
 import { createServerClient } from "@/lib/supabase/server";
 
 interface LayoutProps {
@@ -16,7 +17,7 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
 
   const { data: ev } = await supabase
     .from("events")
-    .select("id, name, slug, organization:organization_id (slug, name)")
+    .select("id, name, slug, organization:organization_id (id, slug, name)")
     .eq("slug", eventSlug)
     .maybeSingle();
 
@@ -24,12 +25,18 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
     redirect("/");
   }
 
+  const orgId = (ev as any).organization?.id as string | undefined;
+
   return (
+    <TenantThemeProvider organizationId={orgId} fullHeight>
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-brand-cream">
       <header className="sticky top-0 z-10 border-b border-brand-ink/10 bg-white/80 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-brand-coral">
+            <p
+              className="text-xs font-medium uppercase tracking-widest"
+              style={{ color: "var(--theme-primary, #FF5E5B)" }}
+            >
               {(ev as any).organization?.name}
             </p>
             <h1 className="font-display text-lg font-semibold leading-tight">{ev.name}</h1>
@@ -55,6 +62,7 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
         <NavItem href={`/v/${orgSlug}/${eventSlug}/feed`} label="Fil" emoji="📣" />
       </nav>
     </div>
+    </TenantThemeProvider>
   );
 }
 

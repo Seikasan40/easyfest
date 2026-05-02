@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { TenantThemeProvider } from "@/components/TenantThemeProvider";
 import { createServerClient } from "@/lib/supabase/server";
 
 interface Props {
@@ -17,7 +18,7 @@ export default async function StaffLayout({ children, params }: Props) {
   // Vérifier rôle staff_scan ou supérieur OU is_entry_scanner
   const { data: membership } = await supabase
     .from("memberships")
-    .select("role, is_entry_scanner, event:event_id (id, name, slug, organization:organization_id (slug, name))")
+    .select("role, is_entry_scanner, event:event_id (id, name, slug, organization:organization_id (id, slug, name))")
     .eq("user_id", userData.user.id)
     .eq("is_active", true)
     .filter("event.slug", "eq", eventSlug)
@@ -31,13 +32,22 @@ export default async function StaffLayout({ children, params }: Props) {
     redirect(`/hub`);
   }
 
+  const orgId = (membership as any).event?.organization?.id as string | undefined;
+
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-brand-ink text-white">
-      <header className="px-4 py-3 border-b border-white/10">
-        <p className="text-xs uppercase tracking-widest text-brand-coral">Staff terrain</p>
-        <h1 className="font-display text-lg font-bold">{(membership as any).event?.name}</h1>
-      </header>
-      <main className="flex-1 overflow-y-auto p-4">{children}</main>
-    </div>
+    <TenantThemeProvider organizationId={orgId} fullHeight>
+      <div className="mx-auto flex min-h-screen max-w-md flex-col bg-brand-ink text-white">
+        <header className="px-4 py-3 border-b border-white/10">
+          <p
+            className="text-xs uppercase tracking-widest"
+            style={{ color: "var(--theme-primary, #FF5E5B)" }}
+          >
+            Staff terrain
+          </p>
+          <h1 className="font-display text-lg font-bold">{(membership as any).event?.name}</h1>
+        </header>
+        <main className="flex-1 overflow-y-auto p-4">{children}</main>
+      </div>
+    </TenantThemeProvider>
   );
 }

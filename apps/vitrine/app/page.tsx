@@ -51,8 +51,8 @@ export default function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <Link href="/commencer" className="rounded-xl bg-brand-coral px-7 py-3.5 text-base font-medium text-white shadow-soft transition hover:opacity-90 hover:shadow-glow">
-                Commencer gratuitement →
+              <Link href="/demande-festival" className="rounded-xl bg-brand-coral px-7 py-3.5 text-base font-medium text-white shadow-soft transition hover:opacity-90 hover:shadow-glow">
+                🚀 Lancer mon festival
               </Link>
               <Link href="/icmpaca" className="rounded-xl border border-brand-ink/15 bg-white/70 px-7 py-3.5 text-base font-medium text-brand-ink backdrop-blur transition hover:bg-white">
                 Découvrir les festivals
@@ -139,7 +139,7 @@ export default function HomePage() {
       <CTASection
         title="Prêt·e à organiser ton festival sans stresser ?"
         subtitle="Compte gratuit en 30 secondes. Aucune carte bleue requise."
-        primaryCta={{ label: "Commencer gratuitement", href: "/commencer" }}
+        primaryCta={{ label: "🚀 Lancer mon festival", href: "/demande-festival" }}
         secondaryCta={{ label: "Voir les tarifs", href: "/pricing" }}
         variant="coral"
       />

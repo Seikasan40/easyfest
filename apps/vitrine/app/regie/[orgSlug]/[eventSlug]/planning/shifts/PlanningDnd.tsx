@@ -158,7 +158,7 @@ function DroppablePool({ assignments }: { assignments: AssignmentLite[] }) {
     <aside
       ref={setNodeRef}
       className={`sticky top-24 self-start rounded-2xl border-2 border-dashed bg-white p-3 ${
-        isOver ? "border-brand-coral" : "border-brand-ink/15"
+        isOver ? "border-[var(--theme-primary,_#FF5E5B)]" : "border-brand-ink/15"
       }`}
     >
       <h3 className="mb-2 text-xs font-medium uppercase tracking-widest text-brand-ink/60">
@@ -187,7 +187,7 @@ function DroppableShift({ bucket }: { bucket: ShiftBucket }) {
   return (
     <section
       ref={setNodeRef}
-      className={`rounded-2xl border bg-white p-4 ${isOver ? "border-brand-coral" : "border-brand-ink/10"}`}
+      className={`rounded-2xl border bg-white p-4 ${isOver ? "border-[var(--theme-primary,_#FF5E5B)]" : "border-brand-ink/10"}`}
       style={{ borderLeft: `4px solid ${bucket.position_color}` }}
     >
       <header className="mb-2 flex items-center justify-between">
@@ -257,3 +257,4 @@ function StatusDot({ status }: { status: string }) {
       : "bg-brand-ink/30";
   return <span className={`h-2 w-2 rounded-full ${color}`} aria-label={status} />;
 }
+                                                                                                                                                                                                                                                                                                           

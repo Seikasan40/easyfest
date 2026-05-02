@@ -5,10 +5,12 @@ import { PlanningTeamsBoard } from "./PlanningTeamsBoard";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
+  searchParams: Promise<{ team?: string }>;
 }
 
-export default async function RegiePlanningPage({ params }: PageProps) {
+export default async function RegiePlanningPage({ params, searchParams }: PageProps) {
   const { orgSlug, eventSlug } = await params;
+  const { team: highlightTeamSlug } = await searchParams;
   const supabase = createServerClient();
 
   const { data: ev } = await supabase
@@ -179,7 +181,12 @@ export default async function RegiePlanningPage({ params }: PageProps) {
         <span><strong>{teams.length}</strong> équipes</span>
       </div>
 
-      <PlanningTeamsBoard initialTeams={teams} initialPool={pool} eventId={ev.id} />
+      <PlanningTeamsBoard
+        initialTeams={teams}
+        initialPool={pool}
+        eventId={ev.id}
+        highlightTeamSlug={highlightTeamSlug ?? null}
+      />
     </div>
   );
 }

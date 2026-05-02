@@ -59,7 +59,13 @@ export default async function HubPage() {
             Mes données et vie privée
           </Link>
           <form action="/auth/logout" method="post">
-            <button className="text-sm text-brand-ink/60 underline">Se déconnecter</button>
+            <button
+              type="submit"
+              aria-label="Se déconnecter d'Easyfest"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/60 underline transition hover:bg-brand-ink/5 hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-brand-coral"
+            >
+              Se déconnecter
+            </button>
           </form>
         </div>
       </main>
@@ -118,7 +124,13 @@ export default async function HubPage() {
           Mes données et vie privée
         </Link>
         <form action="/auth/logout" method="post">
-          <button className="text-sm text-brand-ink/60 underline">Se déconnecter</button>
+          <button
+            type="submit"
+            aria-label="Se déconnecter d'Easyfest"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/60 underline transition hover:bg-brand-ink/5 hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-brand-coral"
+          >
+            Se déconnecter
+          </button>
         </form>
       </div>
     </main>

@@ -260,26 +260,90 @@ export function VolunteerApplicationForm({
         <Checkbox label="J'ai déjà été bénévole sur un festival" name="isReturning" />
       </fieldset>
 
-      {/* Étape 5 — Engagements */}
+      {/* Étape 5 — Engagements (3 accordions chartes + RGPD) */}
       <fieldset className={step === 5 ? "" : "hidden"} aria-hidden={step !== 5}>
+        <p className="mb-3 text-sm text-brand-ink/70">
+          Lis chaque section avant de cocher la case correspondante. Tes consentements sont enregistrés
+          horodatés (audit RGPD + archives juridiques de l'asso).
+        </p>
+
         <div className="space-y-3">
-          <Checkbox
-            label="J'ai lu et j'accepte la charte du festival"
-            name="consentCharter"
-            required
-          />
-          <Checkbox
-            label="Je m'engage contre toute forme de harcèlement"
-            name="consentAntiHarassment"
-            required
-          />
-          <Checkbox
-            label="J'accepte le traitement de mes données conformément à la politique de confidentialité (RGPD)"
-            name="consentPii"
-            required
-          />
-          <Checkbox label="J'autorise l'utilisation de mon image (photos festival)" name="consentImage" />
+          {/* Bloc 1 — Charte du festival */}
+          <details className="group rounded-2xl border border-brand-ink/10 bg-white open:shadow-soft">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-medium hover:bg-brand-ink/[0.02]">
+              <span className="flex items-center gap-2">
+                <span aria-hidden="true">📜</span>
+                Charte du festival
+              </span>
+              <span aria-hidden="true" className="text-brand-ink/40 group-open:rotate-180 transition">▾</span>
+            </summary>
+            <div className="space-y-2 border-t border-brand-ink/5 px-4 py-3 text-xs leading-relaxed text-brand-ink/75">
+              <p>En tant que bénévole, je m'engage à :</p>
+              <ol className="ml-4 list-decimal space-y-1">
+                <li><strong>Respect</strong> envers le public, l'équipe, les artistes et les prestataires.</li>
+                <li><strong>Ponctualité</strong> sur mes shifts ; prévenir le chef·fe d'équipe en cas d'imprévu.</li>
+                <li><strong>Bienveillance</strong> et entraide, on porte le festival ensemble.</li>
+                <li><strong>Sobriété en service</strong> : pas d'alcool ni de substances pendant mes shifts.</li>
+                <li><strong>Signalement</strong> immédiat de tout comportement problématique au Safer Space.</li>
+                <li><strong>Confidentialité</strong> : ne pas diffuser à l'extérieur les infos internes (planning artistes, codes accès…).</li>
+                <li><strong>Préservation du site</strong> : tri des déchets, respect du matériel et des riverains.</li>
+                <li><strong>Badge</strong> visible en permanence sur le site, restitué à la sortie.</li>
+              </ol>
+            </div>
+            <div className="border-t border-brand-ink/5 px-4 py-3">
+              <Checkbox label="J'ai lu et j'accepte la charte du festival" name="consentCharter" required />
+            </div>
+          </details>
+
+          {/* Bloc 2 — Engagement anti-harcèlement */}
+          <details className="group rounded-2xl border border-brand-ink/10 bg-white open:shadow-soft">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-medium hover:bg-brand-ink/[0.02]">
+              <span className="flex items-center gap-2">
+                <span aria-hidden="true">🛡️</span>
+                Engagement anti-harcèlement
+              </span>
+              <span aria-hidden="true" className="text-brand-ink/40 group-open:rotate-180 transition">▾</span>
+            </summary>
+            <div className="space-y-2 border-t border-brand-ink/5 px-4 py-3 text-xs leading-relaxed text-brand-ink/75">
+              <p>Le festival est un Safer Space. Je m'engage formellement à :</p>
+              <ol className="ml-4 list-decimal space-y-1">
+                <li>Ne pas avoir de propos ou gestes <strong>discriminatoires</strong> (sexisme, racisme, LGBTphobie, validisme, classisme).</li>
+                <li>Ne pas adopter de <strong>comportement de harcèlement</strong> (verbal, physique, sexuel, moral) envers qui que ce soit.</li>
+                <li><strong>Signaler</strong> sans délai au Safer Space toute situation dont je serais témoin ou victime.</li>
+                <li>Respecter le <strong>droit au consentement</strong> et au refus de chacun·e en toutes circonstances.</li>
+              </ol>
+              <p className="mt-2 rounded-lg bg-brand-coral/10 px-3 py-2 text-[11px] text-brand-coral">
+                💬 Cellule Safer Space joignable 24/7 sur le festival via l'app Easyfest ou directement sur site (badge violet).
+              </p>
+            </div>
+            <div className="border-t border-brand-ink/5 px-4 py-3">
+              <Checkbox label="Je m'engage contre toute forme de harcèlement" name="consentAntiHarassment" required />
+            </div>
+          </details>
+
+          {/* Bloc 3 — RGPD */}
+          <details className="group rounded-2xl border border-brand-ink/10 bg-white open:shadow-soft">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-medium hover:bg-brand-ink/[0.02]">
+              <span className="flex items-center gap-2">
+                <span aria-hidden="true">🔒</span>
+                Données personnelles (RGPD)
+              </span>
+              <span aria-hidden="true" className="text-brand-ink/40 group-open:rotate-180 transition">▾</span>
+            </summary>
+            <div className="space-y-2 border-t border-brand-ink/5 px-4 py-3 text-xs leading-relaxed text-brand-ink/75">
+              <p><strong>Données collectées</strong> : identité, contact, date de naissance (vérification majorité), préférences de poste, compétences, limitations médicales, consentements, contact d'urgence.</p>
+              <p><strong>Finalité</strong> : organiser ta participation bénévole, gérer planning et badges, te contacter avant et pendant l'événement, satisfaire les obligations légales (préfecture, assurance).</p>
+              <p><strong>Durée de conservation</strong> : 24 mois post-festival pour réinscription facilitée, puis suppression automatique. Documents légaux conservés selon obligations comptables/juridiques (max 10 ans).</p>
+              <p><strong>Tes droits</strong> : accès, rectification, suppression, portabilité, opposition, limitation. Demande à <a href="mailto:dpo@easyfest.app" className="text-brand-coral underline">dpo@easyfest.app</a>.</p>
+              <p>Hébergement UE (Supabase Frankfurt). Aucune donnée vendue ni transférée hors UE.</p>
+            </div>
+            <div className="space-y-2 border-t border-brand-ink/5 px-4 py-3">
+              <Checkbox label="J'accepte le traitement de mes données conformément à la politique de confidentialité" name="consentPii" required />
+              <Checkbox label="J'autorise l'utilisation de mon image (photos festival, optionnel)" name="consentImage" />
+            </div>
+          </details>
         </div>
+
         <input type="hidden" name="turnstileToken" value="placeholder-turnstile-token" />
       </fieldset>
 

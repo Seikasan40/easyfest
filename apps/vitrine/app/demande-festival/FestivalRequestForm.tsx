@@ -273,6 +273,7 @@ function StepYou({ form, update }: StepProps) {
             onChange={(e) => update("firstName", e.target.value)}
             className={inputClass}
             autoComplete="given-name"
+            maxLength={80}
             required
           />
         </Field>
@@ -283,6 +284,7 @@ function StepYou({ form, update }: StepProps) {
             onChange={(e) => update("lastName", e.target.value)}
             className={inputClass}
             autoComplete="family-name"
+            maxLength={80}
           />
         </Field>
       </div>
@@ -294,6 +296,7 @@ function StepYou({ form, update }: StepProps) {
           className={inputClass}
           autoComplete="email"
           inputMode="email"
+          maxLength={200}
           required
         />
       </Field>
@@ -305,6 +308,7 @@ function StepYou({ form, update }: StepProps) {
           className={inputClass}
           autoComplete="tel"
           inputMode="tel"
+          maxLength={30}
         />
       </Field>
     </div>
@@ -324,6 +328,7 @@ function StepOrg({ form, update }: StepProps) {
           value={form.orgName}
           onChange={(e) => update("orgName", e.target.value)}
           className={inputClass}
+          maxLength={150}
           required
         />
       </Field>
@@ -334,6 +339,7 @@ function StepOrg({ form, update }: StepProps) {
           onChange={(e) => update("orgSlug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
           className={inputClass}
           pattern="[a-z0-9-]+"
+          maxLength={64}
           required
         />
       </Field>
@@ -345,6 +351,7 @@ function StepOrg({ form, update }: StepProps) {
             onChange={(e) => update("orgSiret", e.target.value)}
             className={inputClass}
             inputMode="numeric"
+            maxLength={14}
           />
         </Field>
         <Field label="Président·e" hint="Nom du/de la président·e en exercice.">
@@ -353,6 +360,7 @@ function StepOrg({ form, update }: StepProps) {
             value={form.orgPresident}
             onChange={(e) => update("orgPresident", e.target.value)}
             className={inputClass}
+            maxLength={100}
           />
         </Field>
       </div>
@@ -363,6 +371,7 @@ function StepOrg({ form, update }: StepProps) {
           onChange={(e) => update("orgAddress", e.target.value)}
           className={inputClass}
           autoComplete="street-address"
+          maxLength={250}
         />
       </Field>
     </div>
@@ -379,6 +388,7 @@ function StepEvent({ form, update }: StepProps) {
           value={form.eventName}
           onChange={(e) => update("eventName", e.target.value)}
           className={inputClass}
+          maxLength={150}
           required
         />
       </Field>
@@ -389,6 +399,7 @@ function StepEvent({ form, update }: StepProps) {
           onChange={(e) => update("eventSlug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
           className={inputClass}
           pattern="[a-z0-9-]+"
+          maxLength={64}
           required
         />
       </Field>
@@ -419,6 +430,7 @@ function StepEvent({ form, update }: StepProps) {
           onChange={(e) => update("eventLocation", e.target.value)}
           className={inputClass}
           placeholder="Ex : Parc de la Mairie, 06000 Nice"
+          maxLength={200}
           required
         />
       </Field>
@@ -431,6 +443,7 @@ function StepEvent({ form, update }: StepProps) {
             className={inputClass}
             inputMode="numeric"
             min={0}
+            max={1000000}
           />
         </Field>
         <Field label="Type d'événement">

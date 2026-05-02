@@ -26,12 +26,44 @@ interface SubmitInput {
   consentRgpd: boolean;
   /** Honeypot anti-bot : champ caché qui doit RESTER VIDE (les bots le remplissent automatiquement). */
   hp_website?: string;
-  /** Math challenge anti-bot : la réponse à "X + Y = ?" générée côté UI. */
+  /** Math challenge anti-bot — fallback si Turnstile n'est pas configuré */
   hp_math_answer?: string;
-  /** Math challenge expected (signed côté serveur via HMAC dans une V+) — pour V1 on check côté client+serveur. */
   hp_math_expected?: number;
   /** Timestamp ouverture form (anti-submission instantanée par bot). */
   hp_form_opened_at?: number;
+  /** Cloudflare Turnstile token — verifié via siteverify endpoint */
+  turnstileToken?: string;
+}
+
+/**
+ * Vérifie un token Cloudflare Turnstile via le siteverify endpoint.
+ * Retourne true si valide, false sinon. En cas d'erreur réseau, retourne true (fail-open) pour ne pas
+ * bloquer un user légitime quand Cloudflare est down. Le honeypot maison reste actif comme fallback.
+ */
+async function verifyTurnstile(token: string | undefined): Promise<boolean> {
+  const secret = process.env["TURNSTILE_SECRET_KEY"];
+  if (!secret) {
+    // Turnstile pas configuré — on ne bloque pas, le honeypot maison + math challenge protègent.
+    return true;
+  }
+  if (!token) {
+    return false;
+  }
+  try {
+    const formData = new URLSearchParams();
+    formData.append("secret", secret);
+    formData.append("response", token);
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+    const json = (await r.json()) as { success: boolean; "error-codes"?: string[] };
+    return json.success === true;
+  } catch {
+    // Fail-open si réseau down (honeypot reste actif)
+    return true;
+  }
 }
 
 interface ActionResult {
@@ -162,8 +194,19 @@ function validateInput(input: SubmitInput): string | null {
   return null;
 }
 
+// Wrapper qui combine validation synchrone + Turnstile async
+async function validateInputAsync(input: SubmitInput): Promise<string | null> {
+  const syncErr = validateInput(input);
+  if (syncErr) return syncErr;
+  const turnstileOk = await verifyTurnstile(input.turnstileToken);
+  if (!turnstileOk) {
+    return "Échec de la vérification anti-bot. Recharge la page et réessaie.";
+  }
+  return null;
+}
+
 export async function submitFestivalRequest(input: SubmitInput): Promise<ActionResult> {
-  const validationError = validateInput(input);
+  const validationError = await validateInputAsync(input);
   if (validationError) return { ok: false, error: validationError };
 
   const ip = getClientIp();

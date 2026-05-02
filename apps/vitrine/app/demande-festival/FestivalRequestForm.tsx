@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { slugify } from "@easyfest/shared";
 
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { submitFestivalRequest } from "@/app/actions/onboard-self-serve";
+
+const TURNSTILE_SITE_KEY = process.env["NEXT_PUBLIC_TURNSTILE_SITE_KEY"];
 
 /**
  * Génère un challenge mathématique simple (anti-bot).
@@ -78,6 +81,7 @@ export function FestivalRequestForm() {
   // Anti-bot defenses
   const [hpWebsite, setHpWebsite] = useState(""); // honeypot — doit rester vide
   const [hpMathAnswer, setHpMathAnswer] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const mathChallenge = useRef(generateMathChallenge());
   const formOpenedAt = useRef<number>(typeof window !== "undefined" ? Date.now() : 0);
   useEffect(() => {
@@ -103,14 +107,16 @@ export function FestivalRequestForm() {
     const mathOk =
       hpMathAnswer.trim() !== "" &&
       Number.parseInt(hpMathAnswer.trim(), 10) === mathChallenge.current.expected;
+    // Turnstile : on requiert un token uniquement si la siteKey est configurée
+    const turnstileOk = !TURNSTILE_SITE_KEY || turnstileToken.length > 0;
     return [
       Boolean(form.firstName.trim()) && /\S+@\S+\.\S+/.test(form.email),
       Boolean(form.orgName.trim()) && Boolean(form.orgSlug.trim()),
       Boolean(form.eventName.trim()) && Boolean(form.eventStartsAt) && Boolean(form.eventEndsAt) && Boolean(form.eventLocation.trim()),
       Boolean(form.templateSlug),
-      form.consentCgu && form.consentRgpd && mathOk,
+      form.consentCgu && form.consentRgpd && mathOk && turnstileOk,
     ];
-  }, [form, hpMathAnswer]);
+  }, [form, hpMathAnswer, turnstileToken]);
 
   function handleSubmit() {
     if (pending || !stepValidations.every(Boolean)) return;
@@ -141,6 +147,7 @@ export function FestivalRequestForm() {
         hp_math_answer: hpMathAnswer,
         hp_math_expected: mathChallenge.current.expected,
         hp_form_opened_at: formOpenedAt.current,
+        turnstileToken: turnstileToken || undefined,
       });
       if (res.ok) {
         setSubmitted({ email: form.email.trim().toLowerCase() });
@@ -201,6 +208,16 @@ export function FestivalRequestForm() {
                 Désolé pour cette friction, c&apos;est la dernière protection avant le mail magique 🤖
               </span>
             </label>
+            {/* Turnstile anti-bot — uniquement si la siteKey est configurée (sinon math challenge suffit) */}
+            {TURNSTILE_SITE_KEY && (
+              <div className="mt-4">
+                <TurnstileWidget
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken("")}
+                />
+              </div>
+            )}
           </>
         )}
       </div>

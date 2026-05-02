@@ -62,6 +62,25 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
 
   const longPress = useLongPress(triggerMenu, { delay: 250, tolerance: 12 });
 
+  // ⚠️ CRITICAL : @dnd-kit listeners include onPointerDown for drag activation.
+  // useLongPress.handlers ALSO defines onPointerDown. JSX spread merges by overwriting,
+  // so spreading {...longPress.handlers} AFTER {...listeners} silently kills the drag.
+  // Fix : merge handlers manually so BOTH fire on pointer-down. Drag activates at 8px
+  // movement (PointerSensor distance), longPress fires at 250ms hold without movement.
+  // If user moves before 250ms → longPress.onPointerMove cancels timer, drag takes over.
+  const mergedPointerHandlers = {
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      // dnd-kit listener first (it captures pointer for drag tracking)
+      (listeners as any)?.onPointerDown?.(e);
+      longPress.handlers.onPointerDown(e);
+    },
+    onPointerMove: longPress.handlers.onPointerMove,
+    onPointerUp: longPress.handlers.onPointerUp,
+    onPointerCancel: longPress.handlers.onPointerCancel,
+    onPointerLeave: longPress.handlers.onPointerLeave,
+    onContextMenu: longPress.handlers.onContextMenu,
+  };
+
   // Tap mobile : sur touch device (coarse pointer), un clic court ouvre directement le menu
   // (plus rapide que long-press 250ms, et ergonomique sur smartphone). Sur desktop (fine pointer),
   // le clic court ne déclenche rien — c'est le drag ou le long-press/clic droit qui agit.
@@ -92,8 +111,8 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      {...longPress.handlers}
+      {...(listeners as any)}
+      {...mergedPointerHandlers}
       onClick={handleClick}
       role="button"
       tabIndex={0}

@@ -131,11 +131,26 @@ export function LoginForm() {
             {pending ? "Connexion…" : method === "magic" ? "M'envoyer le lien magique" : "Se connecter"}
           </button>
 
-          <p className="text-center text-xs text-brand-ink/50">
-            {method === "magic"
-              ? "Pas de mot de passe à retenir, juste un lien dans ton mail."
-              : "Tu as oublié ton mot de passe ? Bascule sur 'Lien magique' au-dessus."}
-          </p>
+          {method === "password" && (
+            <div className="space-y-2 rounded-xl border border-brand-coral/20 bg-brand-coral/5 p-3 text-center text-xs">
+              <p className="font-medium text-brand-ink/80">Première connexion ou mot de passe oublié ?</p>
+              <button
+                type="button"
+                onClick={() => { setMethod("magic"); setSent(false); setError(null); }}
+                className="text-brand-coral underline-offset-2 hover:underline"
+              >
+                ✨ Reçois un lien magique par email pour te connecter
+              </button>
+              <p className="text-[11px] text-brand-ink/55">
+                Une fois connecté·e, tu pourras définir un mot de passe depuis ton compte.
+              </p>
+            </div>
+          )}
+          {method === "magic" && (
+            <p className="text-center text-xs text-brand-ink/55">
+              Pas de mot de passe à retenir, juste un lien dans ton mail. Valable 1h, à usage unique.
+            </p>
+          )}
         </form>
       )}
 

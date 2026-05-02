@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { validateApplication, refuseApplication, inviteVolunteer } from "@/app/actions/applications-admin";
 
@@ -44,6 +45,7 @@ export function ApplicationsTable({
   applications: Application[];
   eventName: string;
 }) {
+  const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -71,6 +73,7 @@ export function ApplicationsTable({
       const res = await validateApplication(id);
       setPendingId(null);
       setFeedback(res.ok ? "✅ Candidature validée + email envoyé" : `❌ ${res.error}`);
+      if (res.ok) router.refresh(); // Refresh la liste pour afficher le nouveau statut
       setTimeout(() => setFeedback(null), 4000);
     });
   }
@@ -83,6 +86,7 @@ export function ApplicationsTable({
       const res = await refuseApplication(id, reason);
       setPendingId(null);
       setFeedback(res.ok ? "Candidature refusée" : `❌ ${res.error}`);
+      if (res.ok) router.refresh();
       setTimeout(() => setFeedback(null), 4000);
     });
   }
@@ -94,6 +98,7 @@ export function ApplicationsTable({
       const res = await inviteVolunteer(id);
       setPendingId(null);
       setFeedback(res.ok ? `📧 Invitation envoyée à ${email}` : `❌ ${res.error}`);
+      if (res.ok) router.refresh(); // Refresh pour basculer le bouton "Inviter" en "Déjà invité·e"
       setTimeout(() => setFeedback(null), 5000);
     });
   }

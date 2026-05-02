@@ -1,6 +1,9 @@
-import Link from "next/link";
-
 import { createServerClient } from "@/lib/supabase/server";
+
+import { RegieAdminActions } from "./_components/RegieAdminActions";
+import { RegieAlerts } from "./_components/RegieAlerts";
+import { RegieKpis } from "./_components/RegieKpis";
+import { RegiePositionsCoverage } from "./_components/RegiePositionsCoverage";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
@@ -17,7 +20,6 @@ export default async function RegieDashboard({ params }: PageProps) {
     .maybeSingle();
   if (!ev) return null;
 
-  // KPIs en parallèle
   const [
     { count: validatedVolunteers },
     { count: pendingApplications },
@@ -61,7 +63,6 @@ export default async function RegieDashboard({ params }: PageProps) {
       .not("served_at", "is", null),
   ]);
 
-  // Dernières alertes
   const { data: alerts } = await supabase
     .from("safer_alerts")
     .select("id, kind, status, location_hint, created_at")
@@ -69,13 +70,9 @@ export default async function RegieDashboard({ params }: PageProps) {
     .order("created_at", { ascending: false })
     .limit(5);
 
-  // Couverture des postes (besoin vs validé)
   const { data: positions } = await supabase
     .from("positions")
-    .select(`
-      id, name, color, icon,
-      shifts:shifts (id, needs_count)
-    `)
+    .select("id, slug, name, color, icon, shifts:shifts (id, needs_count)")
     .eq("event_id", ev.id)
     .eq("is_active", true)
     .order("display_order", { ascending: true })
@@ -83,178 +80,22 @@ export default async function RegieDashboard({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold">Vue d'ensemble</h2>
-
-      {/* KPIs */}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Kpi label="Bénévoles actifs" value={validatedVolunteers ?? 0} emoji="🎟️" />
-        <Kpi label="Candidatures à valider" value={pendingApplications ?? 0} emoji="📥" tone={pendingApplications ? "warn" : undefined} />
-        <Kpi label="Alertes ouvertes" value={activeAlerts ?? 0} emoji="🚨" tone={activeAlerts ? "danger" : undefined} />
-        <Kpi label="Bien-être rouge" value={redWellbeing ?? 0} emoji="❤️‍🩹" tone={redWellbeing ? "warn" : undefined} />
-        <Kpi label="Arrivées aujourd'hui" value={arrivalScansToday ?? 0} emoji="🚪" />
-        <Kpi label="Repas servis" value={mealsServedToday ?? 0} emoji="🍽️" />
-      </section>
-
-      {/* Actions admin */}
-      <section>
-        <h3 className="mb-3 font-display text-lg font-semibold">Actions administratives</h3>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <a
-            href={`/api/prefecture-export?eventId=${ev.id}`}
-            className="flex items-start gap-3 rounded-2xl border border-brand-ink/10 bg-white p-4 transition hover:border-brand-coral/40 hover:shadow-soft"
-          >
-            <span className="text-3xl">📦</span>
-            <div className="flex-1">
-              <p className="font-display font-semibold">Pack préfecture</p>
-              <p className="mt-0.5 text-xs text-brand-ink/60">
-                ZIP avec liste bénévoles, sponsors, conventions signées + récap.
-                À joindre à la déclaration manifestation.
-              </p>
-            </div>
-            <span className="text-brand-coral">↓</span>
-          </a>
-          <Link
-            href={`/regie/${orgSlug}/${eventSlug}/sponsors`}
-            className="flex items-start gap-3 rounded-2xl border border-brand-ink/10 bg-white p-4 transition hover:border-brand-coral/40 hover:shadow-soft"
-          >
-            <span className="text-3xl">🤝</span>
-            <div className="flex-1">
-              <p className="font-display font-semibold">Sponsors & partenaires</p>
-              <p className="mt-0.5 text-xs text-brand-ink/60">
-                CRM des partenaires, suivi contrats et contreparties.
-              </p>
-            </div>
-            <span className="text-brand-coral">→</span>
-          </Link>
-          <Link
-            href={`/regie/${orgSlug}/${eventSlug}/applications`}
-            className="flex items-start gap-3 rounded-2xl border border-brand-ink/10 bg-white p-4 transition hover:border-brand-coral/40 hover:shadow-soft"
-          >
-            <span className="text-3xl">📧</span>
-            <div className="flex-1">
-              <p className="font-display font-semibold">Inviter bénévoles</p>
-              <p className="mt-0.5 text-xs text-brand-ink/60">
-                Envoie un magic-link aux pré-bénévoles validés pour activer leur compte.
-              </p>
-            </div>
-            <span className="text-brand-coral">→</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* Couverture postes */}
-      <section>
-        <h3 className="mb-3 font-display text-lg font-semibold">Couverture des postes</h3>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {(positions ?? []).map((p: any) => {
-            const totalNeeds = (p.shifts ?? []).reduce((s: number, sh: any) => s + (sh.needs_count ?? 0), 0);
-            return (
-              <div
-                key={p.id}
-                className="rounded-xl border border-brand-ink/10 bg-white p-4"
-                style={{ borderLeft: `4px solid ${p.color}` }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{p.icon}</span>
-                  <p className="font-medium">{p.name}</p>
-                </div>
-                <p className="mt-2 text-xs text-brand-ink/60">
-                  Besoins cumulés : <strong>{totalNeeds}</strong>
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Dernières alertes safer */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold">Alertes safer space</h3>
-          <Link
-            href={`/regie/${orgSlug}/${eventSlug}/safer`}
-            className="text-sm text-brand-coral hover:underline"
-          >
-            Voir tout →
-          </Link>
-        </div>
-        {(alerts ?? []).length === 0 ? (
-          <div className="rounded-xl bg-wellbeing-green/10 p-4 text-sm">
-            ✅ Aucune alerte récente.
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {(alerts ?? []).map((a: any) => (
-              <li
-                key={a.id}
-                className="flex items-center justify-between rounded-xl border border-brand-ink/10 bg-white p-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium">
-                    {alertEmoji(a.kind)} {a.kind} {a.location_hint && `· ${a.location_hint}`}
-                  </p>
-                  <p className="text-xs text-brand-ink/60">
-                    {new Date(a.created_at).toLocaleString("fr-FR")}
-                  </p>
-                </div>
-                <StatusPill status={a.status} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <h2 className="font-display text-2xl font-bold">Vue d&apos;ensemble</h2>
+      <RegieKpis
+        validatedVolunteers={validatedVolunteers ?? 0}
+        pendingApplications={pendingApplications ?? 0}
+        activeAlerts={activeAlerts ?? 0}
+        redWellbeing={redWellbeing ?? 0}
+        arrivalScansToday={arrivalScansToday ?? 0}
+        mealsServedToday={mealsServedToday ?? 0}
+      />
+      <RegieAdminActions orgSlug={orgSlug} eventSlug={eventSlug} eventId={ev.id} />
+      <RegiePositionsCoverage
+        orgSlug={orgSlug}
+        eventSlug={eventSlug}
+        positions={(positions ?? []) as any}
+      />
+      <RegieAlerts orgSlug={orgSlug} eventSlug={eventSlug} alerts={(alerts ?? []) as any} />
     </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  emoji,
-  tone,
-}: {
-  label: string;
-  value: number;
-  emoji: string;
-  tone?: "warn" | "danger";
-}) {
-  const ring =
-    tone === "danger"
-      ? "ring-2 ring-wellbeing-red/40"
-      : tone === "warn"
-      ? "ring-2 ring-wellbeing-yellow/40"
-      : "";
-  return (
-    <div className={`rounded-xl border border-brand-ink/10 bg-white p-4 ${ring}`}>
-      <p className="text-2xl">{emoji}</p>
-      <p className="mt-1 font-display text-3xl font-bold leading-tight">{value}</p>
-      <p className="text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { tone: string; label: string }> = {
-    open: { tone: "bg-wellbeing-red/15 text-wellbeing-red", label: "Ouverte" },
-    acknowledged: { tone: "bg-wellbeing-yellow/15 text-wellbeing-yellow", label: "Prise" },
-    in_progress: { tone: "bg-brand-coral/15 text-brand-coral", label: "En cours" },
-    resolved: { tone: "bg-wellbeing-green/15 text-wellbeing-green", label: "Résolue" },
-    false_alarm: { tone: "bg-brand-ink/10 text-brand-ink/60", label: "Fausse alerte" },
-  };
-  const { tone, label } = map[status] ?? map["open"]!;
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${tone}`}>{label}</span>;
-}
-
-function alertEmoji(kind: string): string {
-  return (
-    {
-      harassment: "🛑",
-      physical_danger: "⚠️",
-      medical: "🩺",
-      wellbeing_red: "🆘",
-      other: "❗",
-    }[kind] ?? "❗"
   );
 }

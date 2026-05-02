@@ -113,22 +113,49 @@ export default async function PlanningPage({ params }: PageProps) {
 
       {(meals ?? []).length > 0 && (
         <section>
-          <h3 className="mb-2 text-sm font-medium uppercase tracking-widest text-brand-ink/50">
-            Mes repas
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-medium uppercase tracking-widest text-brand-ink/50">
+            <span aria-hidden="true">🍽️</span> Mes repas
           </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {(meals ?? []).map((m) => (
-              <div
-                key={m.id}
-                className={`rounded-xl border p-3 text-sm ${
-                  m.served_at
-                    ? "border-brand-ink/10 bg-brand-ink/5 text-brand-ink/50 line-through"
-                    : "border-brand-ink/10 bg-white"
-                }`}
-              >
-                {m.meal_label ?? m.meal_slot}
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {(meals ?? []).map((m) => {
+              const slot = String(m.meal_slot ?? "").toLowerCase();
+              const emoji = slot.includes("matin") || slot.includes("breakfast") || slot.includes("petit")
+                ? "🥐"
+                : slot.includes("midi") || slot.includes("lunch") || slot.includes("dej")
+                  ? "🍽️"
+                  : slot.includes("soir") || slot.includes("diner") || slot.includes("dinner")
+                    ? "🌙"
+                    : slot.includes("snack") || slot.includes("collat") || slot.includes("encas")
+                      ? "🍪"
+                      : "🍴";
+              const served = !!m.served_at;
+              return (
+                <div
+                  key={m.id}
+                  className={`flex flex-col gap-1 rounded-2xl border p-3 transition ${
+                    served
+                      ? "border-wellbeing-green/30 bg-wellbeing-green/5"
+                      : "border-brand-ink/10 bg-white"
+                  }`}
+                >
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl" aria-hidden="true">{emoji}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        served
+                          ? "bg-wellbeing-green/15 text-wellbeing-green"
+                          : "bg-brand-ink/10 text-brand-ink/60"
+                      }`}
+                    >
+                      {served ? "✓ Servi" : "À venir"}
+                    </span>
+                  </div>
+                  <p className={`text-sm font-medium ${served ? "text-brand-ink/60" : ""}`}>
+                    {m.meal_label ?? m.meal_slot}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}

@@ -2,27 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────
+ * Easyfest globals — v4 fmono mobile-first absolu (validée 2 mai 2026)
+ * Pamela est en mobilité site, sans wifi : tout doit fonctionner pouce.
+ * ───────────────────────────────────────────────────────────────────── */
+
 @layer base {
   :root {
-    --background: 255 244 230;
-    --foreground: 31 34 51;
-    --muted: 245 230 211;
+    /* Tokens v4 (RGB triplets pour Tailwind/RGBA) */
+    --easyfest-coral: 255 94 91;
+    --easyfest-amber: 244 184 96;
+    --easyfest-ink: 26 26 26;
+    --easyfest-cream: 255 248 240;
+    --easyfest-pine: 45 95 79;
+
+    /* Compat shadcn-like */
+    --background: 255 248 240;
+    --foreground: 26 26 26;
+    --muted: 244 232 216;
     --muted-foreground: 100 116 139;
     --primary: 255 94 91;
-    --primary-foreground: 255 255 255;
-    --border: 229 231 235;
+    --primary-foreground: 255 248 240;
+    --border: 234 226 213;
+
+    /* Theming par tenant (override-able via TenantThemeProvider) */
+    --theme-primary: #ff5e5b;
+    --theme-accent: #f4b860;
+    --theme-surface: #fff8f0;
+    --theme-text: #1a1a1a;
   }
 
+  /* Empêche resize horizontal landscape iOS Safari */
   html {
+    -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
 
   body {
     background-color: rgb(var(--background));
     color: rgb(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* iOS PWA : empêche overscroll bounce parasite */
+    overscroll-behavior-y: none;
+    /* Mobile : empêche zoom involontaire double-tap sur boutons */
+    touch-action: manipulation;
+  }
+
+  /* Tous les inputs doivent être à 16px minimum (iOS no-zoom) */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 
   ::selection {
@@ -30,14 +63,58 @@
     color: rgb(var(--primary-foreground));
   }
 
+  /* Touch-targets minimum 44px sur boutons + liens d'action */
+  button,
+  a[role="button"],
+  [data-touch-target] {
+    min-height: 44px;
+  }
+
+  /* Focus visible cohérent (accessibilité clavier) */
+  :focus-visible {
+    outline: 2px solid rgb(var(--easyfest-coral));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Reduced motion respect */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
   }
+
+  /* Scrollbar discrète sur desktop, native sur mobile */
+  @media (pointer: fine) {
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(26, 26, 26, 0.18);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(26, 26, 26, 0.32); }
+  }
+}
+
+@layer utilities {
+  .tagline {
+    font-family: var(--font-inter), Inter, system-ui, sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .display-serif {
+    font-family: var(--font-source-serif), "Source Serif 4", Georgia, serif;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+  /* Safe area iOS notch */
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pl-safe { padding-left: env(safe-area-inset-left); }
+  .pr-safe { padding-right: env(safe-area-inset-right); }
 }

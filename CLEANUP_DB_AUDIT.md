@@ -57,3 +57,33 @@ Après cleanup applications, supprimer auth.users avec :
 6. Vérification finale via Supabase Studio ou pgAdmin
 
 **Pas de DELETE sans validation user. Pas de cascade sans count préalable.**
+
+---
+
+## ✅ EXÉCUTION (Claude Code · 3 mai 2026, ~01h05 UTC)
+
+DRY-RUN counts via Supabase Management API (script
+[`scripts/_cleanup_audit_traces_dryrun.sql`](scripts/_cleanup_audit_traces_dryrun.sql)) :
+
+| Cible | Count |
+|---|---:|
+| organizations (audit-% / audit10-%) | 0 |
+| volunteer_applications (mailinator audit) | 0 |
+| auth.users (mailinator audit) | 0 |
+| sponsors (audit / extreme) | 0 |
+| safer_alerts (test e2e / audit) | 0 |
+| pending_festival_requests | **2** |
+| messages (broadcast audit) | 0 |
+| 🛡️ SAFETY: real RDL orgs in pattern | 0 ✓ |
+| 🛡️ SAFETY: demo @easyfest.test in pattern | 0 ✓ |
+
+User a validé → DELETE exécuté sur les 2 lignes :
+
+- `10e8b909-…` `audit-final-asso` `easyfest-audit-final-j26@mailinator.com`
+- `e89db0e7-…` `audit10-asso` `easyfest-audit10-j26@mailinator.com`
+
+**Recount post-DELETE : 0 ligne match les patterns audit.** ✓
+
+> Note : la table `broadcast_messages` listée dans la spec initiale n'existe
+> pas — la table réelle est `messages` avec un flag `is_broadcast`. Filtre
+> ajusté en conséquence dans le script de DRY-RUN.

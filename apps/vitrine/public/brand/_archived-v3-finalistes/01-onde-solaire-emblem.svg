@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Easyfest emblème">
+  <defs>
+    <linearGradient id="ge1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FF5E5B"/>
+      <stop offset="100%" stop-color="#F4B860"/>
+    </linearGradient>
+  </defs>
+  <path d="M 8 38 A 24 24 0 0 1 56 38" fill="none" stroke="url(#ge1)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="20" y1="38" x2="20" y2="50" stroke="#FF5E5B" stroke-width="3" stroke-linecap="round"/>
+  <line x1="32" y1="38" x2="32" y2="56" stroke="#FF5E5B" stroke-width="3" stroke-linecap="round"/>
+  <line x1="44" y1="38" x2="44" y2="50" stroke="#FF5E5B" stroke-width="3" stroke-linecap="round"/>
+</svg>

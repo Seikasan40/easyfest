@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" role="img" aria-label="Easyfest">
+  <!-- 5 cercles imbriqués représentant les 5 rôles -->
+  <g fill="none" stroke-width="3.5" stroke-linecap="round">
+    <circle cx="22" cy="32" r="11" stroke="#FF5E5B" opacity="0.9"/>
+    <circle cx="32" cy="32" r="11" stroke="#F4B860" opacity="0.85"/>
+    <circle cx="42" cy="32" r="11" stroke="#FF5E5B" opacity="0.9"/>
+    <circle cx="27" cy="32" r="11" stroke="#1A1A1A" opacity="0.5"/>
+    <circle cx="37" cy="32" r="11" stroke="#1A1A1A" opacity="0.5"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="68" y="40" font-family="-apple-system,'Segoe UI',sans-serif" font-size="24" font-weight="700" fill="#1A1A1A" letter-spacing="-0.5">Easyfest</text>
+</svg>

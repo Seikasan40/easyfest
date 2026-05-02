@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" role="img" aria-label="Easyfest">
+  <!-- Carré coral arrondi avec F custom -->
+  <rect x="4" y="8" width="48" height="48" rx="12" fill="#FF5E5B"/>
+  <!-- F stylisé : barre verticale + 2 traits horizontaux décalés -->
+  <path d="M 18 18 L 18 50 M 18 22 L 38 22 M 18 32 L 32 32" stroke="#FFF8F0" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <!-- Point déliant -->
+  <circle cx="38" cy="42" r="3" fill="#FFF8F0"/>
+  <!-- Wordmark -->
+  <text x="64" y="40" font-family="-apple-system,'Segoe UI',sans-serif" font-size="22" font-weight="700" fill="#1A1A1A" letter-spacing="-0.5">Easyfest</text>
+  <text x="64" y="55" font-family="-apple-system,sans-serif" font-size="9" font-weight="500" fill="#1A1A1A" opacity="0.55" letter-spacing="2">LE FESTIVAL PRO</text>
+</svg>

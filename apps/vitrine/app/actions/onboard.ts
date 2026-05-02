@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/supabase/server";
 
 /**
  * À appeler quand un user vient de se connecter pour la 1ère fois.
@@ -12,6 +12,13 @@ import { createServerClient } from "@/lib/supabase/server";
  * 2. membership (role=volunteer is_active=true) sur l'event correspondant
  *
  * Si la photo a été uploadée à l'inscription, elle est recopiée dans le profil.
+ *
+ * Sécurité : les inserts memberships/profiles passent par le service-role client
+ * (bypass RLS) car la policy `memberships_insert_lead` réserve les inserts à
+ * volunteer_lead+. Un volunteer ne peut donc pas s'auto-créer sa membership en
+ * user-context. Le contrat de sécurité reste tenu : on ne crée une membership
+ * QUE pour les event_ids où il existe une volunteer_application `validated`
+ * pour l'email authentifié de l'utilisateur courant.
  */
 export async function onboardCurrentUser(): Promise<{
   ok: boolean;
@@ -26,19 +33,25 @@ export async function onboardCurrentUser(): Promise<{
   const userEmail = (userData.user.email ?? "").toLowerCase();
   if (!userEmail) return { ok: false, error: "Email manquant" };
 
-  // 1. Trouver les applications validées non-encore-onboardées pour cet email
-  const { data: apps } = await supabase
+  const admin = createServiceClient();
+
+  // 1. Trouver les applications validées pour cet email (via service-role pour
+  //    s'affranchir de toute restriction RLS sur volunteer_applications).
+  const { data: apps, error: appsErr } = await admin
     .from("volunteer_applications")
-    .select("id, event_id, full_name, first_name, last_name, birth_date, is_minor, gender, phone, profession, address_street, address_city, address_zip, size, diet_notes, has_vehicle, driving_license, available_setup, available_teardown, diet_type, carpool, preferred_position_slugs, skills, limitations, bio, is_returning, avatar_url")
+    .select(
+      "id, event_id, full_name, first_name, last_name, birth_date, is_minor, gender, phone, profession, address_street, address_city, address_zip, size, diet_notes, has_vehicle, driving_license, available_setup, available_teardown, diet_type, carpool, preferred_position_slugs, skills, limitations, bio, is_returning, avatar_url",
+    )
     .eq("email", userEmail)
     .eq("status", "validated");
 
+  if (appsErr) return { ok: false, error: `Lookup applications: ${appsErr.message}` };
   if (!apps || apps.length === 0) {
     return { ok: true, upgradedApps: 0 };
   }
 
   // 2. Vérifier si profil existe déjà
-  const { data: existingProfile } = await supabase
+  const { data: existingProfile } = await admin
     .from("volunteer_profiles")
     .select("user_id")
     .eq("user_id", userId)
@@ -46,8 +59,8 @@ export async function onboardCurrentUser(): Promise<{
 
   // 3. Créer profile si manquant (à partir de la dernière application)
   if (!existingProfile) {
-    const lastApp = apps[0]; // les applications sont datées, on prend la 1ère
-    await supabase.from("volunteer_profiles").insert({
+    const lastApp = apps[0]!; // les applications sont datées, on prend la 1ère
+    const { error: profErr } = await admin.from("volunteer_profiles").insert({
       user_id: userId,
       full_name: lastApp.full_name ?? userEmail,
       first_name: lastApp.first_name,
@@ -72,12 +85,13 @@ export async function onboardCurrentUser(): Promise<{
       avatar_url: lastApp.avatar_url,
       is_returning: lastApp.is_returning ?? false,
     });
+    if (profErr) return { ok: false, error: `Profile creation: ${profErr.message}` };
   }
 
-  // 4. Pour chaque application, créer membership si manquant
+  // 4. Pour chaque application, créer membership si manquant. Fail-fast sur erreur.
   let upgraded = 0;
   for (const app of apps) {
-    const { data: existingMembership } = await supabase
+    const { data: existingMembership } = await admin
       .from("memberships")
       .select("id")
       .eq("user_id", userId)
@@ -85,19 +99,26 @@ export async function onboardCurrentUser(): Promise<{
       .maybeSingle();
 
     if (!existingMembership) {
-      const { error: memErr } = await supabase.from("memberships").insert({
+      const { error: memErr } = await admin.from("memberships").insert({
         user_id: userId,
         event_id: app.event_id,
         role: "volunteer",
         is_active: true,
       });
-      if (!memErr) upgraded++;
+      if (memErr) {
+        return {
+          ok: false,
+          upgradedApps: upgraded,
+          error: `Membership creation: ${memErr.message}`,
+        };
+      }
+      upgraded++;
     }
   }
 
   // 5. Audit
   if (upgraded > 0) {
-    await supabase.from("audit_log").insert({
+    await admin.from("audit_log").insert({
       user_id: userId,
       action: "user.onboarded",
       payload: { upgraded_applications: upgraded, email: userEmail },

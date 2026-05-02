@@ -2,6 +2,65 @@
 
 > Ce prompt fait : nettoyage repo, fixes code, implémentations manquantes, tests Vitest, build verify, nettoyage BDD via SQL, commits/push consolidés. À lancer EN SECOND, après le PROMPT 1/2 Cowork qui a généré `BUGS_AUDIT_EXTREME.md` et `CLEANUP_DB_AUDIT.md` à la racine du repo.
 
+---
+
+## 🔴🔴🔴 BUG ABSOLUMENT BLOQUANT À FIXER EN PRIORITÉ #1 (avant tout le reste)
+
+**`onboardCurrentUser` ne crée PAS la membership volunteer post-magic-link** (RLS bloque l'insert).
+
+Confirmé en live : Anaïs Bayart a reçu son invite, cliqué le magic-link, mais reste pre-volunteer. Côté régie planning, **AUCUN bénévole n'est draggable** car les 82 sont tous "pre-volunteer" (badge ⏳). Cause : RLS `memberships_insert_lead` exige `volunteer_lead+` pour insert, mais `onboardCurrentUser` utilise `createServerClient` (user-context).
+
+**Impact J-26 RDL2026** : 79 bénévoles validés ne pourront PAS être placés sur le planning. Pamela bloquée le jour de la démo.
+
+**Fix obligatoire** :
+1. **`apps/vitrine/app/actions/onboard.ts`** : remplacer `createServerClient()` par `createServiceClient()` pour les inserts `volunteer_profiles` + `memberships` (avec sécurité préalable : vérifier que l'application validée existe pour cet email avant d'insérer). Faire échouer FAST sur `memErr` au lieu de swallow silently.
+2. **Nouvelle migration `packages/db/supabase/migrations/20260503000001_rls_membership_self_volunteer.sql`** :
+   ```sql
+   create policy "memberships_insert_self_volunteer" on public.memberships
+     for insert with check (
+       user_id = auth.uid()
+       and role = 'volunteer'
+       and exists (
+         select 1 from public.volunteer_applications va
+         join auth.users au on lower(au.email) = lower(va.email)
+         where va.event_id = memberships.event_id
+           and va.status = 'validated'
+           and au.id = auth.uid()
+       )
+     );
+   ```
+3. Defense-in-depth : appliquer les 2 fixes (service client + RLS policy) ensemble.
+
+**Critère de validation après fix** : créer une candidature manuelle mailinator → valider → inviter → click magic-link → /hub doit afficher la carte volunteer (pas "Pas encore d'affectation") + côté régie planning, le bénévole doit apparaître SANS badge ⏳ et drag → "✓ Sauvegardé" avec persistence F5.
+
+Détails complets dans `BUGS_AUDIT_EXTREME.md` à la racine.
+
+---
+
+## 📋 Notes user (à respecter strictement)
+
+### Workflow d'orchestration
+1. Phase 1 (nettoyage repo) : tu fais en autonomie
+2. Phase 2 (impl manquantes) : tu fais en autonomie (force-set-password, QR SVG, templates Auth)
+3. **Phase 3 (fixes bugs Cowork) : me relancer pour traiter les bugs trouvés** dans `BUGS_AUDIT_EXTREME.md` (le user veut me relancer après que j'aie fini Phases 1+2 pour traiter les bugs un par un avec validation)
+4. Phase 4 (tests Vitest + build) : tu fais en autonomie
+5. **Phase 5 (nettoyage BDD) : poser `.env.deploy.local` à la racine du repo, puis me relancer (DRY-RUN counts d'abord, puis demander validation explicite user avant DELETE prod)**
+
+### Bugs pré-existants hors scope (NE PAS toucher)
+- `pnpm test` (turbo) fail "no test files" — config root utilise un glob relatif au cwd des sous-packages. Tests passent avec `--root` depuis racine. **Hors scope, non régressé**.
+- Modifs non-committed déjà présentes dans le worktree (préexistantes, **pas mon scope ni le tien**) :
+  - `package.json`
+  - `packages/db/supabase/config.toml` (re-encoding LF/CRLF)
+  - `apps/vitrine/tsconfig.json`
+  - `marketing/` (générée par Cowork)
+  - `pnpm-lock.yaml`
+
+### Vérifications limitées
+- Skip vérification preview (pas de dev server). Build prod passant + types OK suffit.
+- Test interactif `/account/setup-password` nécessiterait session Supabase live → skip, à valider post-deploy par re-pass Cowork.
+
+---
+
 ## Tu es Claude Code
 
 Tu es lancé dans un terminal ouvert dans `E:\Easy_Fest\Easy_Fest\easyfest`. Mission : finaliser l'audit J-26 RDL2026 en faisant TOUT ce que Cowork ne peut pas faire optimalement (tooling code, DB, repo cleanup), basé sur les bugs trouvés par Cowork.

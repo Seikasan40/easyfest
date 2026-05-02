@@ -21,7 +21,8 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { eventSlug } = await params;
-  return { title: `Mon poste · ${eventSlug} — Easyfest` };
+  // Le template root metadata.title est `%s · Easyfest`, donc on ne ré-ajoute pas Easyfest ici.
+  return { title: `Mon poste · ${eventSlug}` };
 }
 
 export default async function PostePage({ params }: PageProps) {

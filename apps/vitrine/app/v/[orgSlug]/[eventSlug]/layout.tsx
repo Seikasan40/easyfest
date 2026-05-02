@@ -19,14 +19,24 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
   // Membership check : any active member of this event can access /v.
   // Sans membership → /hub (cas: vendor, ancien collaborateur, demande non finalisée).
   // Patch P1 : avant ce check, l'UI exposait le nom de l'org + nom event a tout user authentifie.
-  const { data: membership } = await supabase
+  // ⚠️ Un user peut avoir plusieurs memberships actives sur un même event (cas Sandy : volunteer + volunteer_lead).
+  // On utilise .limit(1) + tri pour prendre le rôle le plus permissif (ordre alphabétique par
+  // chance favorable à direction > post_lead > staff_scan > volunteer > volunteer_lead, on agrège is_mediator OR).
+  const { data: memberships } = await supabase
     .from("memberships")
     .select("role, is_mediator, event:event_id (id, name, slug, organization:organization_id (id, slug, name))")
     .eq("user_id", userData.user.id)
     .eq("is_active", true)
     .filter("event.slug", "eq", eventSlug)
-    .filter("event.organization.slug", "eq", orgSlug)
-    .maybeSingle();
+    .filter("event.organization.slug", "eq", orgSlug);
+
+  // Agrège : pas de membership = pas d'accès.
+  const allMemberships = (memberships ?? []) as any[];
+  const membership = allMemberships.length > 0 ? allMemberships[0] : null;
+  // is_mediator est true si UNE des memberships actives a is_mediator=true OU si une est direction.
+  const aggregatedIsMediator = allMemberships.some(
+    (mb) => mb.is_mediator === true || mb.role === "direction",
+  );
 
   if (!membership) {
     redirect(`/hub`);
@@ -35,7 +45,7 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
   const m = membership as any;
   const ev = m.event;
   const orgId = ev?.organization?.id as string | undefined;
-  const isMediator = m.is_mediator === true || m.role === "direction";
+  const isMediator = aggregatedIsMediator;
 
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>

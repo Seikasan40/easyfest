@@ -28,37 +28,77 @@ export default async function RegiePlanningPage({ params, searchParams }: PagePr
     .eq("is_active", true)
     .order("display_order", { ascending: true });
 
-  // 2. Tous les bénévoles validés (memberships role=volunteer is_active)
-  const { data: members } = await supabase
+  // 2. Tous les bénévoles validés (memberships role=volunteer is_active).
+  //
+  // ⚠️ Bug #6 fix (audit-extreme retest Phase 4 V2, 3 mai 2026) :
+  // l'embed PostgREST `volunteer_profiles!memberships_user_id_fkey` ne
+  // fonctionne PAS car aucune FK directe n'existe entre `memberships` et
+  // `volunteer_profiles` (les deux tables référencent `auth.users.id`
+  // séparément). PostgREST retournait `PGRST200 — Could not find a
+  // relationship`, et `data` arrivait à `null` (erreur non destructurée
+  // côté JS). Symptôme : `members.length === 0`, donc tous les apps
+  // tombaient dans `preVolunteers` → compteur "84 (84 en attente compte)"
+  // découplé de la BDD.
+  //
+  // Fix : on fait 2 queries séparées (memberships + volunteer_profiles
+  // par user_id IN list) et on merge JS-side.
+  const { data: rawMembers, error: membersErr } = await supabase
     .from("memberships")
-    .select(`
-      user_id,
-      profile:volunteer_profiles!memberships_user_id_fkey (
-        full_name, first_name, avatar_url, phone, email, is_returning
-      )
-    `)
+    .select("user_id")
     .eq("event_id", ev.id)
     .eq("role", "volunteer")
     .eq("is_active", true);
+  if (membersErr) {
+    console.error("[planning] members query failed:", membersErr.message);
+  }
 
-  const userIds = (members ?? []).map((m: any) => m.user_id);
+  const memberUserIds = (rawMembers ?? []).map((m: any) => m.user_id);
+
+  const { data: memberProfilesData } = memberUserIds.length
+    ? await supabase
+        .from("volunteer_profiles")
+        .select("user_id, full_name, first_name, avatar_url, phone, email, is_returning")
+        .in("user_id", memberUserIds)
+    : { data: [] as any[] };
+
+  const profilesByUserId = new Map<string, any>();
+  (memberProfilesData ?? []).forEach((p: any) => {
+    profilesByUserId.set(p.user_id, p);
+  });
+
+  const members = (rawMembers ?? []).map((m: any) => ({
+    user_id: m.user_id,
+    profile: profilesByUserId.get(m.user_id) ?? null,
+  }));
+
+  const userIds = memberUserIds;
 
   // 2b. ⚠️ Toutes les memberships actives (tous rôles) pour exclure les non-volunteers
   // (direction, post_lead, volunteer_lead, staff_scan) du pool "à placer".
   // Sinon Pamela (direction) avec une candidature validée à elle-même apparaît comme
   // pending_account=true alors qu'elle a un compte → curseur rouge + faux bouton Inviter.
-  const { data: allMemberships } = await supabase
+  //
+  // Idem Bug #6 : 2 queries séparées au lieu d'embed PostgREST cassé.
+  const { data: allMembershipsRaw } = await supabase
     .from("memberships")
-    .select(`
-      user_id,
-      profile:volunteer_profiles!memberships_user_id_fkey (email)
-    `)
+    .select("user_id")
     .eq("event_id", ev.id)
     .eq("is_active", true);
 
+  const allMemberUserIds = Array.from(
+    new Set((allMembershipsRaw ?? []).map((m: any) => m.user_id)),
+  );
+
+  const { data: allMemberProfiles } = allMemberUserIds.length
+    ? await supabase
+        .from("volunteer_profiles")
+        .select("email")
+        .in("user_id", allMemberUserIds)
+    : { data: [] as any[] };
+
   const allMemberEmails = new Set(
-    (allMemberships ?? [])
-      .map((m: any) => (m.profile?.email ?? "").toLowerCase())
+    (allMemberProfiles ?? [])
+      .map((p: any) => (p.email ?? "").toLowerCase())
       .filter(Boolean),
   );
 

@@ -12,7 +12,7 @@ export default async function PlanSitePage({ params }: PageProps) {
 
   const { data: ev } = await supabase
     .from("events")
-    .select("id, name, location_name, site_plan_url, site_plan_dark_url, site_plan_caption")
+    .select("id, name, location, site_plan_url, site_plan_dark_url, site_plan_caption")
     .eq("slug", eventSlug)
     .maybeSingle();
 
@@ -31,7 +31,7 @@ export default async function PlanSitePage({ params }: PageProps) {
         <h1 className="font-display text-2xl font-bold">Plan du site</h1>
         <p className="text-sm text-brand-ink/60">
           {ev.name}
-          {ev.location_name && <> · {ev.location_name}</>}
+          {(ev as any).location && <> · {(ev as any).location}</>}
         </p>
       </header>
 

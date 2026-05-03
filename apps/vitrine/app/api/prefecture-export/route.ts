@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 
   // Récupérer toutes les données
   const [evRes, appsRes, sponsorsRes, signedRes, orgRes] = await Promise.all([
-    supabase.from("events").select("id, name, slug, starts_at, ends_at, location, location_name, organization_id").eq("id", eventId).maybeSingle(),
+    supabase.from("events").select("id, name, slug, starts_at, ends_at, location, organization_id").eq("id", eventId).maybeSingle(),
     supabase.from("volunteer_applications").select("first_name, last_name, full_name, email, phone, birth_date, is_minor, address_street, address_city, address_zip, has_vehicle, driving_license, status, source").eq("event_id", eventId).order("last_name", { ascending: true }),
     supabase.from("sponsors").select("name, tier, status, contact_name, contact_email, amount_eur").eq("event_id", eventId).order("amount_eur", { ascending: false }),
     supabase.from("signed_engagements").select("user_id, engagement_kind, signed_at, version").eq("event_id", eventId).order("signed_at", { ascending: false }),
@@ -122,7 +122,7 @@ export async function GET(req: Request) {
 
 - **Nom** : ${ev.name}
 - **Dates** : du ${dateFmt(ev.starts_at)} au ${dateFmt(ev.ends_at)}
-- **Lieu** : ${ev.location_name ?? ev.location ?? "—"}
+- **Lieu** : ${ev.location ?? "—"}
 
 ## Organisateur
 

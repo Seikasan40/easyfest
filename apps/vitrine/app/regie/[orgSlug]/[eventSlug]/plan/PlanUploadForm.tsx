@@ -64,7 +64,8 @@ export function PlanUploadForm({ eventId, currentPlanUrl, currentDarkUrl, curren
           name="caption"
           defaultValue={currentCaption ?? ""}
           placeholder="ex: Plan officiel Roots du Lac 2026 — version validée mairie"
-          className="mt-2 block w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
+          enterKeyHint="done"
+          className="mt-2 block h-11 w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
         />
       </div>
 
@@ -81,7 +82,7 @@ export function PlanUploadForm({ eventId, currentPlanUrl, currentDarkUrl, curren
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-[var(--theme-primary,_#FF5E5B)] py-2.5 font-display text-sm font-semibold text-white shadow-glow disabled:opacity-50"
+        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[var(--theme-primary,_#FF5E5B)] py-3 font-display text-base font-semibold text-white shadow-glow disabled:opacity-50"
       >
         {pending ? "Upload en cours…" : "Sauvegarder"}
       </button>

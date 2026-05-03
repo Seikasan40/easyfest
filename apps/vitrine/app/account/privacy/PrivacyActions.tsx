@@ -104,7 +104,7 @@ export default function PrivacyActions({ mode }: Props) {
           onClick={handleExport}
           disabled={busy}
           data-testid="export-btn"
-          className="bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brand-coral px-5 py-3 text-base font-semibold text-white shadow-soft transition hover:bg-brand-coral/90 disabled:opacity-50 sm:w-auto"
         >
           {busy ? "Préparation…" : "Télécharger mes données (JSON)"}
         </button>
@@ -121,7 +121,7 @@ export default function PrivacyActions({ mode }: Props) {
           onClick={handleRestore}
           disabled={busy}
           data-testid="restore-btn"
-          className="shadow-soft rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-base font-semibold text-white shadow-soft transition hover:bg-emerald-700 disabled:opacity-50 sm:w-auto"
         >
           {busy ? "Restauration…" : "Annuler la suppression"}
         </button>
@@ -145,7 +145,9 @@ export default function PrivacyActions({ mode }: Props) {
           data-testid="delete-confirm-input"
           autoComplete="off"
           spellCheck={false}
-          className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+          autoCapitalize="characters"
+          enterKeyHint="done"
+          className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 text-base focus:outline-none"
           placeholder="DELETE"
         />
       </label>
@@ -154,7 +156,7 @@ export default function PrivacyActions({ mode }: Props) {
         onClick={handleDelete}
         disabled={busy || confirm !== "DELETE"}
         data-testid="delete-btn"
-        className="shadow-soft rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-red-600 px-5 py-3 text-base font-semibold text-white shadow-soft transition hover:bg-red-700 disabled:opacity-50 sm:w-auto"
       >
         {busy ? "Suppression…" : "Supprimer mon compte"}
       </button>

@@ -75,10 +75,20 @@ export function LoginForm() {
         <form onSubmit={submit} className="space-y-4">
           <label className="block">
             <span className="mb-1 block text-sm font-medium">Email</span>
-            <input type="email" required autoFocus autoComplete="email" value={email}
+            <input
+              type="email"
+              required
+              autoFocus
+              autoComplete="email"
+              inputMode="email"
+              enterKeyHint={method === "password" ? "next" : "send"}
+              spellCheck={false}
+              autoCapitalize="none"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
-              placeholder="ton@email.fr" />
+              placeholder="ton@email.fr"
+            />
           </label>
 
           {method === "password" && (
@@ -89,6 +99,9 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
+                  enterKeyHint="send"
+                  spellCheck={false}
+                  autoCapitalize="none"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-xl border border-brand-ink/15 bg-white px-3.5 py-2.5 pr-12 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"

@@ -220,7 +220,7 @@ export default function OnboardingWizard({ templates }: Props) {
                 onChange={(e) => onOrgNameChange(e.target.value)}
                 placeholder="ZIK en PACA"
                 data-testid="org-name"
-                className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+                className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 text-base focus:outline-none"
                 autoFocus
               />
             </label>
@@ -238,7 +238,7 @@ export default function OnboardingWizard({ templates }: Props) {
                 }}
                 placeholder="zik-en-paca"
                 data-testid="org-slug"
-                className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 font-mono text-sm focus:outline-none"
+                className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 font-mono text-base focus:outline-none"
               />
             </label>
           </div>
@@ -249,7 +249,7 @@ export default function OnboardingWizard({ templates }: Props) {
               onClick={next}
               disabled={!canContinueOrg}
               data-testid="continue-btn"
-              className="bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
+              className="inline-flex min-h-[48px] items-center justify-center bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-3 text-base font-semibold text-white transition disabled:opacity-50"
             >
               Continuer →
             </button>
@@ -275,7 +275,7 @@ export default function OnboardingWizard({ templates }: Props) {
                 onChange={(e) => onEventNameChange(e.target.value)}
                 placeholder="Roots du Lac 2026"
                 data-testid="event-name"
-                className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+                className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 text-base focus:outline-none"
               />
             </label>
             <label className="block text-sm">
@@ -291,7 +291,7 @@ export default function OnboardingWizard({ templates }: Props) {
                   setEventSlugTouched(true);
                 }}
                 data-testid="event-slug"
-                className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 font-mono text-sm focus:outline-none"
+                className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 font-mono text-base focus:outline-none"
               />
             </label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -302,7 +302,7 @@ export default function OnboardingWizard({ templates }: Props) {
                   value={eventStarts}
                   onChange={(e) => setEventStarts(e.target.value)}
                   data-testid="event-starts"
-                  className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+                  className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 text-base focus:outline-none"
                 />
               </label>
               <label className="block text-sm">
@@ -312,7 +312,7 @@ export default function OnboardingWizard({ templates }: Props) {
                   value={eventEnds}
                   onChange={(e) => setEventEnds(e.target.value)}
                   data-testid="event-ends"
-                  className="border-brand-ink/15 focus:border-brand-coral mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none"
+                  className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 text-base focus:outline-none"
                 />
               </label>
             </div>
@@ -322,7 +322,7 @@ export default function OnboardingWizard({ templates }: Props) {
             <button
               type="button"
               onClick={back}
-              className="border-brand-ink/15 text-brand-ink/70 rounded-xl border px-5 py-2.5 text-sm font-medium"
+              className="inline-flex min-h-[48px] items-center justify-center border-brand-ink/15 text-brand-ink/70 rounded-xl border px-5 py-3 text-base font-medium hover:bg-brand-ink/5"
             >
               ← Retour
             </button>
@@ -331,7 +331,7 @@ export default function OnboardingWizard({ templates }: Props) {
               onClick={next}
               disabled={!canContinueEvent}
               data-testid="continue-btn"
-              className="bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
+              className="inline-flex min-h-[48px] items-center justify-center bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-3 text-base font-semibold text-white transition disabled:opacity-50"
             >
               Continuer →
             </button>
@@ -411,7 +411,7 @@ export default function OnboardingWizard({ templates }: Props) {
             <button
               type="button"
               onClick={back}
-              className="border-brand-ink/15 text-brand-ink/70 rounded-xl border px-5 py-2.5 text-sm font-medium"
+              className="inline-flex min-h-[48px] items-center justify-center border-brand-ink/15 text-brand-ink/70 rounded-xl border px-5 py-3 text-base font-medium hover:bg-brand-ink/5"
             >
               ← Retour
             </button>
@@ -420,7 +420,7 @@ export default function OnboardingWizard({ templates }: Props) {
               onClick={submitCreation}
               disabled={!canContinueTemplate || pending}
               data-testid="create-org-btn"
-              className="bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
+              className="inline-flex min-h-[48px] items-center justify-center bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-3 text-base font-semibold text-white transition disabled:opacity-50"
             >
               {pending ? "Création…" : "Créer l'organisation →"}
             </button>
@@ -445,14 +445,19 @@ export default function OnboardingWizard({ templates }: Props) {
                   value={inv.email}
                   onChange={(e) => updateInvite(i, { email: e.target.value })}
                   placeholder="email@asso.fr"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   data-testid={`invite-email-${i}`}
-                  className="border-brand-ink/15 focus:border-brand-coral min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none"
+                  className="border-brand-ink/15 focus:border-brand-coral h-11 min-w-0 flex-1 rounded-lg border px-3 py-2 text-base focus:outline-none"
                 />
                 <select
                   value={inv.role}
                   onChange={(e) => updateInvite(i, { role: e.target.value as Invite["role"] })}
                   data-testid={`invite-role-${i}`}
-                  className="border-brand-ink/15 focus:border-brand-coral rounded-lg border px-2 py-2 text-sm focus:outline-none"
+                  className="border-brand-ink/15 focus:border-brand-coral h-11 rounded-lg border px-2 py-2 text-base focus:outline-none"
                 >
                   {TEAM_ROLES.map((r) => (
                     <option key={r.value} value={r.value}>
@@ -463,7 +468,7 @@ export default function OnboardingWizard({ templates }: Props) {
                 <button
                   type="button"
                   onClick={() => removeInvite(i)}
-                  className="text-brand-ink/50 text-xs underline"
+                  className="inline-flex min-h-[44px] items-center px-2 text-sm text-brand-ink/60 underline hover:text-brand-ink"
                   aria-label="Supprimer l'invitation"
                 >
                   Retirer
@@ -492,7 +497,7 @@ export default function OnboardingWizard({ templates }: Props) {
             <button
               type="button"
               onClick={() => setStep(4)}
-              className="border-brand-ink/15 text-brand-ink/70 rounded-xl border px-5 py-2.5 text-sm font-medium"
+              className="inline-flex min-h-[48px] items-center justify-center border-brand-ink/15 text-brand-ink/70 rounded-xl border px-5 py-3 text-base font-medium hover:bg-brand-ink/5"
               data-testid="skip-team-btn"
             >
               Passer
@@ -502,7 +507,7 @@ export default function OnboardingWizard({ templates }: Props) {
               onClick={submitInvites}
               disabled={pending || invites.length === 0}
               data-testid="submit-invites-btn"
-              className="bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50"
+              className="inline-flex min-h-[48px] items-center justify-center bg-brand-coral shadow-soft hover:bg-brand-coral/90 rounded-xl px-5 py-3 text-base font-semibold text-white transition disabled:opacity-50"
             >
               {pending
                 ? "Envoi…"

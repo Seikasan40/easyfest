@@ -105,7 +105,9 @@ export function SponsorsBoard({ sponsors, eventId }: { sponsors: Sponsor[]; even
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Recherche nom, contact…"
-          className="flex-1 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
+          inputMode="search"
+          enterKeyHint="search"
+          className="h-11 flex-1 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
         />
         <button
           type="button"
@@ -113,7 +115,7 @@ export function SponsorsBoard({ sponsors, eventId }: { sponsors: Sponsor[]; even
             setEditingSponsor(null);
             setShowAddModal(true);
           }}
-          className="rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-4 py-2 text-sm font-semibold text-white shadow-glow hover:bg-[var(--theme-primary,_#FF5E5B)] hover:opacity-90"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-4 py-2 text-sm font-semibold text-white shadow-glow hover:bg-[var(--theme-primary,_#FF5E5B)] hover:opacity-90"
         >
           + Ajouter
         </button>
@@ -379,6 +381,25 @@ function Field({
   required?: boolean;
   placeholder?: string;
 }) {
+  // Mobile-first : inputMode/autoComplete inférés du nom + h-11 + text-base
+  const lc = name.toLowerCase();
+  const extra: Record<string, unknown> = {};
+  if (type === "email" || lc.includes("email")) {
+    extra["inputMode"] = "email";
+    extra["autoComplete"] = "email";
+    extra["autoCapitalize"] = "none";
+    extra["spellCheck"] = false;
+  } else if (type === "tel" || lc.includes("phone")) {
+    extra["inputMode"] = "tel";
+    extra["autoComplete"] = "tel";
+  } else if (type === "url" || lc.includes("url") || lc.includes("website")) {
+    extra["inputMode"] = "url";
+    extra["autoComplete"] = "url";
+    extra["autoCapitalize"] = "none";
+    extra["spellCheck"] = false;
+  } else if (type === "number" || lc.includes("amount")) {
+    extra["inputMode"] = "decimal";
+  }
   return (
     <label className="block">
       <span className="text-xs font-semibold text-brand-ink/70">{label}</span>
@@ -388,7 +409,9 @@ function Field({
         defaultValue={defaultValue}
         required={required}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
+        enterKeyHint="next"
+        {...extra}
+        className="mt-1 h-11 w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
       />
     </label>
   );
@@ -411,7 +434,7 @@ function SelectField({
       <select
         name={name}
         defaultValue={defaultValue}
-        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
+        className="mt-1 h-11 w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
       >
         {children}
       </select>
@@ -440,7 +463,7 @@ function TextareaField({
         defaultValue={defaultValue}
         rows={rows}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-2 py-1.5 text-sm focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
+        className="mt-1 w-full rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none"
       />
     </label>
   );

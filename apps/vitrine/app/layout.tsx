@@ -55,6 +55,16 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Easyfest",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
   openGraph: {
     type: "website",
     locale: "fr_FR",
@@ -97,6 +107,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Maximum-scale et user-scalable laissés par défaut (NE PAS désactiver le zoom :
+  // accessibilité WCAG SC 1.4.4 + 1.4.10).
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FF5E5B" },

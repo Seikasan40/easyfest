@@ -55,7 +55,7 @@ export function CharterModal({ open, onClose, onScrolledToBottom, alreadyRead }:
             <h2 id="charter-title" className="font-display text-xl font-bold">📜 Charte du festival</h2>
             <p className="mt-0.5 text-xs text-brand-ink/60">Lecture obligatoire — fais défiler jusqu'en bas</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-lg p-2 text-brand-ink/60 transition hover:bg-brand-ink/5">✕</button>
+          <button type="button" onClick={onClose} aria-label="Fermer" className="inline-flex h-11 w-11 items-center justify-center rounded-lg p-2 text-brand-ink/60 transition hover:bg-brand-ink/5">✕</button>
         </header>
 
         <div className="relative h-1.5 overflow-hidden bg-brand-ink/10">
@@ -184,9 +184,9 @@ export function CharterModal({ open, onClose, onScrolledToBottom, alreadyRead }:
           {!hasScrolledToBottom ? (
             <p className="text-center text-sm text-brand-ink/60">📖 Continue de scroller pour finir la lecture ({Math.round(scrollProgress * 100)}%)</p>
           ) : (
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <span className="flex items-center gap-2 text-sm font-medium text-wellbeing-green">✅ Charte lue intégralement</span>
-              <button type="button" onClick={onClose} className="rounded-xl bg-brand-coral px-5 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90">J'ai compris, fermer</button>
+              <button type="button" onClick={onClose} className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-brand-coral px-5 py-3 text-base font-medium text-white shadow-soft transition hover:opacity-90">J&apos;ai compris, fermer</button>
             </div>
           )}
         </footer>

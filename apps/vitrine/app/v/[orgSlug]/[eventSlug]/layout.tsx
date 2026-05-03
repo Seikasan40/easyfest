@@ -50,7 +50,10 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
       <div className="mx-auto flex min-h-screen max-w-md flex-col bg-brand-cream">
-        <header className="sticky top-0 z-10 border-b border-brand-ink/10 bg-white/80 px-4 py-3 backdrop-blur">
+        <header
+          className="sticky top-0 z-10 border-b border-brand-ink/10 bg-white/80 px-4 py-3 backdrop-blur"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p
@@ -81,10 +84,13 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
           aria-label="Navigation bénévole"
           className={`sticky bottom-0 z-10 border-t border-brand-ink/10 bg-white/95 backdrop-blur ${
             isMediator
-              ? "flex overflow-x-auto px-2 py-1.5"
-              : "grid grid-cols-5 px-2 py-1.5"
+              ? "flex overflow-x-auto px-2 pt-1.5"
+              : "grid grid-cols-5 px-2 pt-1.5"
           }`}
-          style={{ WebkitOverflowScrolling: "touch" }}
+          style={{
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "max(0.375rem, env(safe-area-inset-bottom))",
+          }}
         >
           <NavItem href={`/v/${orgSlug}/${eventSlug}`} label="Accueil" emoji="🏠" wide={isMediator} />
           <NavItem href={`/v/${orgSlug}/${eventSlug}/qr`} label="Mon QR" emoji="🎟️" wide={isMediator} />

@@ -168,7 +168,7 @@ export default async function VolunteerHome({ params }: PageProps) {
         <Stat label="Repas" value={mealsRemaining ?? 0} emoji="🍽️" />
         <Link
           href={`/v/${orgSlug}/${eventSlug}/wellbeing`}
-          className="rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-white"
+          className="flex min-h-[72px] flex-col items-center justify-center rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-white"
         >
           <p className="text-2xl">💚</p>
           <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">
@@ -177,7 +177,7 @@ export default async function VolunteerHome({ params }: PageProps) {
         </Link>
         <Link
           href={`/v/${orgSlug}/${eventSlug}/plan`}
-          className="rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-white"
+          className="flex min-h-[72px] flex-col items-center justify-center rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-white"
         >
           <p className="text-2xl">🗺️</p>
           <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">
@@ -186,7 +186,7 @@ export default async function VolunteerHome({ params }: PageProps) {
         </Link>
         <Link
           href={`/v/${orgSlug}/${eventSlug}/profile`}
-          className="rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-white"
+          className="flex min-h-[72px] flex-col items-center justify-center rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-white"
         >
           <p className="text-2xl">👤</p>
           <p className="mt-1 text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">

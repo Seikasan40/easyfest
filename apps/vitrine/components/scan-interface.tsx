@@ -50,14 +50,14 @@ export function ScanInterface({ eventId, eventName }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Mode picker */}
+      {/* Mode picker — 3 cols toujours OK car icône+1 mot court */}
       <div className="grid grid-cols-3 gap-2 rounded-xl bg-white/10 p-1">
         {(["arrival", "meal", "post_take"] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
-            className={`rounded-lg py-2 text-sm font-medium transition ${
+            className={`inline-flex min-h-[44px] items-center justify-center rounded-lg px-2 py-2 text-sm font-medium transition ${
               mode === m ? "bg-brand-coral text-white" : "text-white/70 hover:bg-white/10"
             }`}
           >
@@ -81,13 +81,17 @@ export function ScanInterface({ eventId, eventName }: Props) {
             value={manualToken}
             onChange={(e) => setManualToken(e.target.value)}
             placeholder="eyJ2IjoxLCJ2aWQiOi..."
-            className="flex-1 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:border-brand-coral focus:outline-none"
+            autoCapitalize="none"
+            spellCheck={false}
+            inputMode="text"
+            enterKeyHint="search"
+            className="h-11 flex-1 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-base text-white placeholder-white/30 focus:border-brand-coral focus:outline-none"
           />
           <button
             type="button"
             onClick={() => manualToken && handleScan(manualToken)}
             disabled={pending || !manualToken}
-            className="rounded-xl bg-brand-coral px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center rounded-xl bg-brand-coral px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
           >
             {pending ? "…" : "Scanner"}
           </button>

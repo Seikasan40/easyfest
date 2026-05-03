@@ -179,14 +179,15 @@ export function WellbeingInteractive({
                   onChange={(e) => setAlertDescription(e.target.value)}
                   rows={3}
                   placeholder="Décris brièvement (où, qui, quoi)…"
-                  className="mt-3 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-wellbeing-red focus:outline-none focus:ring-2 focus:ring-wellbeing-red/20"
+                  enterKeyHint="send"
+                  className="mt-3 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-wellbeing-red focus:outline-none focus:ring-2 focus:ring-wellbeing-red/20"
                 />
               )}
-              <div className="mt-4 flex justify-between">
+              <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
                 <button
                   type="button"
                   onClick={() => setAlertOpen(false)}
-                  className="text-sm text-brand-ink/60"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-brand-ink/15 px-4 py-2 text-sm text-brand-ink/70 hover:bg-brand-ink/5"
                 >
                   Annuler
                 </button>
@@ -194,7 +195,7 @@ export function WellbeingInteractive({
                   type="button"
                   onClick={submitAlert}
                   disabled={!alertKind || pending}
-                  className="rounded-xl bg-wellbeing-red px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-wellbeing-red px-4 py-3 text-base font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
                 >
                   {pending ? "Envoi…" : "Envoyer l'alerte"}
                 </button>

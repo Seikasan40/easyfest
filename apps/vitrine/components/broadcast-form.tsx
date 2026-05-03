@@ -88,16 +88,17 @@ export function BroadcastForm({ eventId, positions }: Props) {
           rows={3}
           maxLength={1000}
           placeholder="Annonce, alerte, info pratique…"
-          className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+          enterKeyHint="send"
+          className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
         />
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs text-brand-ink/50">{content.length}/1000 caractères</p>
           <button
             type="button"
             disabled={!content.trim() || pending}
             onClick={submit}
-            className="rounded-xl bg-brand-coral px-5 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-brand-coral px-5 py-2 text-base font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50 sm:w-auto"
           >
             {pending ? "Envoi…" : "Diffuser"}
           </button>
@@ -132,7 +133,7 @@ function TargetChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-medium ${toneClass}`}
+      className={`inline-flex min-h-[44px] items-center rounded-full px-4 py-2 text-sm font-medium ${toneClass}`}
     >
       {label}
     </button>

@@ -44,7 +44,10 @@ export default async function PosteLayout({ children, params }: Props) {
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
       <div className="mx-auto max-w-3xl">
-        <header className="sticky top-0 z-10 border-b border-brand-ink/10 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+        <header
+          className="sticky top-0 z-10 border-b border-brand-ink/10 bg-white/95 px-4 py-3 backdrop-blur sm:px-6"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p

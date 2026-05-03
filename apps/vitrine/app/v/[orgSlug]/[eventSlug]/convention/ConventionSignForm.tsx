@@ -53,7 +53,7 @@ export function ConventionSignForm({ eventId, version, fullName }: Props) {
           type="checkbox"
           checked={acceptCharter}
           onChange={(e) => setAcceptCharter(e.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-[var(--theme-primary,_#FF5E5B)]"
+          className="mt-0.5 h-5 w-5 accent-[var(--theme-primary,_#FF5E5B)]"
           required
         />
         <span className="text-sm">
@@ -67,7 +67,7 @@ export function ConventionSignForm({ eventId, version, fullName }: Props) {
           type="checkbox"
           checked={acceptImage}
           onChange={(e) => setAcceptImage(e.target.checked)}
-          className="mt-0.5 h-4 w-4 accent-[var(--theme-primary,_#FF5E5B)]"
+          className="mt-0.5 h-5 w-5 accent-[var(--theme-primary,_#FF5E5B)]"
         />
         <span className="text-sm text-brand-ink/80">
           <strong>(Optionnel)</strong> J'autorise l'utilisation de mon image dans le cadre de la

@@ -41,7 +41,10 @@ export default async function StaffLayout({ children, params }: Props) {
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
       <div className="mx-auto flex min-h-screen max-w-md flex-col bg-brand-ink text-white">
-        <header className="px-4 py-3 border-b border-white/10">
+        <header
+          className="px-4 py-3 border-b border-white/10"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
           <p
             className="text-xs uppercase tracking-widest"
             style={{ color: "var(--theme-primary, #FF5E5B)" }}
@@ -50,7 +53,12 @@ export default async function StaffLayout({ children, params }: Props) {
           </p>
           <h1 className="font-display text-lg font-bold">{(membership as any).event?.name}</h1>
         </header>
-        <main className="flex-1 overflow-y-auto p-4">{children}</main>
+        <main
+          className="flex-1 overflow-y-auto p-4"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          {children}
+        </main>
       </div>
     </TenantThemeProvider>
   );

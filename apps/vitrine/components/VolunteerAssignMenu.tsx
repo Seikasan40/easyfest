@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { useSwipeDown } from "@/lib/use-swipe";
+
 import { useAssign, type AssignVolunteerSummary } from "./AssignContext";
 
 interface Props {
@@ -54,6 +56,9 @@ export function VolunteerAssignMenu({
     };
   }, [open]);
 
+  // Swipe-down pour fermer (UX mobile native, n'altère pas comportement desktop).
+  const swipeHandlers = useSwipeDown(onClose, { threshold: 80 });
+
   if (!open || !volunteer) return null;
 
   const isPending = volunteer.pending_account;
@@ -72,9 +77,23 @@ export function VolunteerAssignMenu({
       <div
         ref={dialogRef}
         className="relative z-10 w-full max-w-md rounded-t-3xl bg-white shadow-2xl sm:rounded-2xl"
-        style={{ maxHeight: "85vh" }}
+        style={{
+          maxHeight: "85vh",
+          paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+        }}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-brand-ink/10 p-4">
+        {/* Drag handle visuel mobile + zone de swipe-down to dismiss */}
+        <div
+          className="flex justify-center pt-2 sm:hidden"
+          {...swipeHandlers}
+          aria-hidden="true"
+        >
+          <span className="h-1.5 w-12 rounded-full bg-brand-ink/20" />
+        </div>
+        <div
+          className="flex items-start justify-between gap-3 border-b border-brand-ink/10 p-4"
+          {...swipeHandlers}
+        >
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-medium uppercase tracking-widest text-brand-coral">
               Assigner à une équipe

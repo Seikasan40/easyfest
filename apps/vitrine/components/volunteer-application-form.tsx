@@ -353,13 +353,16 @@ export function VolunteerApplicationForm({
         </div>
       )}
 
-      {/* Navigation steps */}
-      <div className="flex items-center justify-between pt-4">
+      {/* Navigation steps — mobile-first : sticky bottom + safe-area, boutons full-width 48px */}
+      <div
+        className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-brand-ink/10 bg-easyfest-cream/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-4"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
         {step > 1 ? (
           <button
             type="button"
             onClick={() => setStep((s) => (Math.max(1, s - 1) as Step))}
-            className="text-sm text-brand-ink/60 hover:underline"
+            className="inline-flex min-h-[48px] items-center gap-1 rounded-xl border border-brand-ink/15 px-4 py-2 text-sm font-medium text-brand-ink/70 hover:bg-brand-ink/5"
           >
             ← Retour
           </button>
@@ -371,7 +374,7 @@ export function VolunteerApplicationForm({
           <button
             type="button"
             onClick={() => setStep((s) => (Math.min(5, s + 1) as Step))}
-            className="rounded-xl bg-brand-ink px-5 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1 rounded-xl bg-brand-ink px-5 py-3 text-base font-medium text-white shadow-soft transition hover:opacity-90 sm:flex-initial"
           >
             Continuer →
           </button>
@@ -379,7 +382,7 @@ export function VolunteerApplicationForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-xl bg-brand-coral px-6 py-3 text-sm font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-1 rounded-xl bg-brand-coral px-6 py-3 text-base font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50 sm:flex-initial"
           >
             {pending ? "Envoi…" : "Envoyer ma candidature"}
           </button>
@@ -390,6 +393,38 @@ export function VolunteerApplicationForm({
 }
 
 // ─── Inputs primitifs (sans dépendance, shadcn-like) ────────────
+// Mobile-first audit : inputs h-11 + text-base (≥ 16px iOS no-zoom) + inputMode/autoComplete
+// dérivés du `type`. Globals.css enforce déjà font-size 16px mais on ajoute aussi text-base
+// pour cohérence visuelle Tailwind + on passe la hauteur à h-11 (44px touch target).
+function inferInputAttrs(type: string, name: string) {
+  const lc = name.toLowerCase();
+  if (type === "email" || lc.includes("email")) {
+    return { inputMode: "email" as const, autoComplete: "email", autoCapitalize: "none", spellCheck: false };
+  }
+  if (type === "tel" || lc.includes("phone")) {
+    return { inputMode: "tel" as const, autoComplete: "tel", spellCheck: false };
+  }
+  if (type === "date" || type === "datetime-local") {
+    return { autoComplete: "off" };
+  }
+  if (lc.includes("firstname") || lc.includes("first_name")) {
+    return { autoComplete: "given-name", autoCapitalize: "words" };
+  }
+  if (lc.includes("lastname") || lc.includes("last_name")) {
+    return { autoComplete: "family-name", autoCapitalize: "words" };
+  }
+  if (lc.includes("birth") || lc.includes("birthdate")) {
+    return { autoComplete: "bday" };
+  }
+  if (lc.includes("city") || lc.includes("ville")) {
+    return { autoComplete: "address-level2", autoCapitalize: "words" };
+  }
+  if (lc.includes("zip") || lc.includes("postal")) {
+    return { inputMode: "numeric" as const, autoComplete: "postal-code" };
+  }
+  return {};
+}
+
 function Field({
   label,
   name,
@@ -405,6 +440,7 @@ function Field({
   minLength?: number;
   placeholder?: string;
 }) {
+  const attrs = inferInputAttrs(type, name);
   return (
     <label className="mb-3 block">
       <span className="mb-1 block text-sm font-medium">
@@ -416,7 +452,9 @@ function Field({
         required={required}
         minLength={minLength}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+        enterKeyHint="next"
+        {...attrs}
+        className="h-11 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
       />
     </label>
   );
@@ -436,7 +474,7 @@ function Select({
       <span className="mb-1 block text-sm font-medium">{label}</span>
       <select
         name={name}
-        className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+        className="h-11 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
       >
         {children}
       </select>
@@ -459,7 +497,7 @@ function Textarea({
       <textarea
         name={name}
         rows={rows}
-        className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+        className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
       />
     </label>
   );

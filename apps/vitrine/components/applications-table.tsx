@@ -112,7 +112,7 @@ export function ApplicationsTable({
               key={s}
               type="button"
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1 text-xs font-medium ${
+              className={`inline-flex min-h-[40px] items-center rounded-lg px-3 py-1.5 text-sm font-medium ${
                 filter === s ? "bg-white shadow-soft" : "text-brand-ink/60"
               }`}
             >
@@ -130,7 +130,9 @@ export function ApplicationsTable({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Recherche nom / email / tel…"
-          className="flex-1 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-sm focus:border-brand-coral focus:outline-none"
+          inputMode="search"
+          enterKeyHint="search"
+          className="h-11 flex-1 rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none"
         />
       </div>
 

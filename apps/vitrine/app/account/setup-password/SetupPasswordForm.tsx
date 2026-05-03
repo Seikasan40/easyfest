@@ -25,9 +25,12 @@ export default function SetupPasswordForm() {
           name="password"
           required
           autoComplete="new-password"
+          enterKeyHint="next"
+          spellCheck={false}
+          autoCapitalize="none"
           minLength={12}
           data-testid="password-input"
-          className="mt-1 w-full rounded-lg border border-brand-ink/15 px-3 py-2 text-sm focus:border-brand-coral focus:outline-none"
+          className="mt-1 h-11 w-full rounded-lg border border-brand-ink/15 px-3 py-2 text-base focus:border-brand-coral focus:outline-none"
         />
       </label>
 
@@ -38,9 +41,12 @@ export default function SetupPasswordForm() {
           name="confirm"
           required
           autoComplete="new-password"
+          enterKeyHint="send"
+          spellCheck={false}
+          autoCapitalize="none"
           minLength={12}
           data-testid="confirm-input"
-          className="mt-1 w-full rounded-lg border border-brand-ink/15 px-3 py-2 text-sm focus:border-brand-coral focus:outline-none"
+          className="mt-1 h-11 w-full rounded-lg border border-brand-ink/15 px-3 py-2 text-base focus:border-brand-coral focus:outline-none"
         />
       </label>
 
@@ -54,7 +60,7 @@ export default function SetupPasswordForm() {
         type="submit"
         disabled={pending}
         data-testid="submit-btn"
-        className="w-full rounded-xl bg-brand-coral px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-coral/90 disabled:opacity-50"
+        className="min-h-[48px] w-full rounded-xl bg-brand-coral px-5 py-3 text-base font-semibold text-white shadow-soft transition hover:bg-brand-coral/90 disabled:opacity-50"
       >
         {pending ? "Enregistrement…" : "Enregistrer mon mot de passe"}
       </button>

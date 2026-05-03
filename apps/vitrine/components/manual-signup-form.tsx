@@ -45,7 +45,10 @@ export function ManualSignupForm({
           name="fullName"
           required
           minLength={2}
-          className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+          autoComplete="name"
+          autoCapitalize="words"
+          enterKeyHint="next"
+          className="h-11 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
         />
       </label>
       <label className="block">
@@ -56,7 +59,12 @@ export function ManualSignupForm({
           type="email"
           name="email"
           required
-          className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="next"
+          className="h-11 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
         />
       </label>
       <label className="block">
@@ -64,14 +72,17 @@ export function ManualSignupForm({
         <input
           type="tel"
           name="phone"
-          className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+          autoComplete="tel"
+          inputMode="tel"
+          enterKeyHint="next"
+          className="h-11 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
         />
       </label>
       <label className="block">
         <span className="mb-1 block text-sm font-medium">Poste préféré</span>
         <select
           name="positionSlug"
-          className="w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
+          className="h-11 w-full rounded-xl border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-brand-coral focus:outline-none focus:ring-2 focus:ring-brand-coral/20"
         >
           <option value="">— à déterminer plus tard</option>
           {positions.map((p) => (
@@ -85,7 +96,7 @@ export function ManualSignupForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-brand-coral px-5 py-3 font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
+        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brand-coral px-5 py-3 text-base font-medium text-white shadow-soft transition hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Envoi…" : "Inscrire + envoyer le lien magique"}
       </button>

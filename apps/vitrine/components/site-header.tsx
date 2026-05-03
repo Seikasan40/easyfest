@@ -13,7 +13,10 @@ export async function SiteHeader() {
   const isLogged = !!data.user;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-brand-ink/10 bg-brand-cream/80 backdrop-blur-md">
+    <header
+      className="sticky top-0 z-40 border-b border-brand-ink/10 bg-brand-cream/80 backdrop-blur-md"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
@@ -42,14 +45,14 @@ export async function SiteHeader() {
           <div className="flex items-center gap-2">
             <Link
               href="/hub"
-              className="rounded-xl bg-brand-ink px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+              className="inline-flex min-h-[44px] items-center rounded-xl bg-brand-ink px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
               Mon espace
             </Link>
             <form action="/auth/logout" method="post">
               <button
                 type="submit"
-                className="rounded-xl border border-brand-ink/15 px-3 py-2 text-sm font-medium text-brand-ink/70 transition hover:bg-brand-ink/5"
+                className="inline-flex min-h-[44px] items-center rounded-xl border border-brand-ink/15 px-3 py-2 text-sm font-medium text-brand-ink/70 transition hover:bg-brand-ink/5"
               >
                 Quitter
               </button>
@@ -58,7 +61,7 @@ export async function SiteHeader() {
         ) : (
           <Link
             href="/auth/login"
-            className="rounded-xl bg-brand-coral px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90"
+            className="inline-flex min-h-[44px] items-center rounded-xl bg-brand-coral px-4 py-2 text-sm font-medium text-white shadow-soft transition hover:opacity-90"
           >
             Connexion
           </Link>

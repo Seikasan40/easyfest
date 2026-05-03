@@ -5,7 +5,7 @@ interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
 }
 
-export default async function RegiePlanningPage({ params }: PageProps) {
+export default async function RegiePlanningShiftsPage({ params }: PageProps) {
   const { eventSlug } = await params;
   const supabase = createServerClient();
 
@@ -16,43 +16,72 @@ export default async function RegiePlanningPage({ params }: PageProps) {
     .maybeSingle();
   if (!ev) return null;
 
-  const { data: shifts } = await supabase
+  // Bug #12-13 fix (audit-extreme 3 mai 2026) :
+  // - assignments.volunteer_user_id → auth.users (pas exposé) → embed cassé
+  // - memberships → volunteer_profiles : pas de FK directe → embed cassé
+  // Split en queries séparées + merge JS-side via Map.
+  const { data: shifts, error: shiftsErr } = await supabase
     .from("shifts")
     .select(`
       id, starts_at, ends_at, needs_count,
       position:position_id (id, name, color, icon, event_id),
-      assignments:assignments (
-        id, status, volunteer_user_id,
-        volunteer:volunteer_user_id (volunteer_profiles!user_id (full_name, first_name))
-      )
+      assignments:assignments (id, status, volunteer_user_id)
     `)
     .order("starts_at", { ascending: true });
+  if (shiftsErr) console.error("[Planning shifts] shifts failed:", shiftsErr.message);
 
   // Filtrer par event
   const eventShifts = (shifts ?? []).filter((s: any) => s.position?.event_id === ev.id);
 
-  // Bénévoles validés mais sans assignment = pool
+  // Bénévoles validés (memberships)
   const { data: members } = await supabase
     .from("memberships")
-    .select(`
-      user_id, role,
-      profile:volunteer_profiles!memberships_user_id_fkey (full_name, first_name)
-    `)
+    .select("user_id, role")
     .eq("event_id", ev.id)
     .eq("role", "volunteer")
     .eq("is_active", true);
 
-  const allAssignmentUserIds = new Set(
-    eventShifts.flatMap((s: any) => s.assignments.map((a: any) => a.volunteer_user_id)),
+  // UNION user_ids : memberships volunteers + assignments volunteers
+  const allUserIds = Array.from(
+    new Set([
+      ...(members ?? []).map((m: any) => m.user_id),
+      ...eventShifts.flatMap((s: any) => (s.assignments ?? []).map((a: any) => a.volunteer_user_id)),
+    ]),
   );
+
+  // Fetch profiles (1 query)
+  const { data: profileRows } = allUserIds.length
+    ? await supabase
+        .from("volunteer_profiles")
+        .select("user_id, full_name, first_name, last_name, email")
+        .in("user_id", allUserIds)
+    : { data: [] as any[] };
+
+  const profilesByUserId = new Map<string, any>(
+    (profileRows ?? []).map((p: any) => [p.user_id, p]),
+  );
+
+  const allAssignmentUserIds = new Set(
+    eventShifts.flatMap((s: any) => (s.assignments ?? []).map((a: any) => a.volunteer_user_id)),
+  );
+
+  const fallbackName = (p: any) =>
+    p?.full_name ??
+    [p?.first_name, p?.last_name].filter(Boolean).join(" ") ??
+    p?.email ??
+    "—";
+
   const unassignedPool = (members ?? [])
     .filter((m: any) => !allAssignmentUserIds.has(m.user_id))
-    .map((m: any) => ({
-      id: `unassigned-${m.user_id}`,
-      status: "pending",
-      volunteer_user_id: m.user_id,
-      volunteer: { full_name: m.profile?.full_name ?? "—", first_name: m.profile?.first_name ?? null },
-    }));
+    .map((m: any) => {
+      const p = profilesByUserId.get(m.user_id);
+      return {
+        id: `unassigned-${m.user_id}`,
+        status: "pending",
+        volunteer_user_id: m.user_id,
+        volunteer: { full_name: fallbackName(p), first_name: p?.first_name ?? null },
+      };
+    });
 
   const buckets = eventShifts.map((s: any) => ({
     id: s.id,
@@ -61,12 +90,15 @@ export default async function RegiePlanningPage({ params }: PageProps) {
     needs_count: s.needs_count,
     position_name: s.position?.name ?? "?",
     position_color: s.position?.color ?? "#FF5E5B",
-    assignments: s.assignments.map((a: any) => ({
-      id: a.id,
-      status: a.status,
-      volunteer_user_id: a.volunteer_user_id,
-      volunteer: a.volunteer?.volunteer_profiles ?? { full_name: "—", first_name: null },
-    })),
+    assignments: (s.assignments ?? []).map((a: any) => {
+      const p = profilesByUserId.get(a.volunteer_user_id);
+      return {
+        id: a.id,
+        status: a.status,
+        volunteer_user_id: a.volunteer_user_id,
+        volunteer: { full_name: fallbackName(p), first_name: p?.first_name ?? null },
+      };
+    }),
   }));
 
   return (

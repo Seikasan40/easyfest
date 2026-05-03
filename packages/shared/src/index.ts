@@ -9,3 +9,4 @@ export * from "./schemas/wellbeing";
 export * from "./schemas/safer-alert";
 export * from "./utils/slug";
 export * from "./utils/datetime";
+export * from "./utils/profile-merge";

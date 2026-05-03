@@ -27,21 +27,25 @@ export default async function ApplicationsPage({ params }: PageProps) {
     .eq("event_id", ev.id)
     .order("created_at", { ascending: false });
 
-  // Récupérer les emails des comptes ayant une membership active sur CET event
-  // (tous rôles : direction / volunteer / volunteer_lead / post_lead / staff_scan).
-  // C'est la source de vérité "a un compte connecté à ce festival" — plus fiable
-  // que volunteer_profiles.email qui peut manquer pour les comptes non-bénévoles.
-  const { data: activeMembers } = await supabase
+  // Bug #11 fix : embed `volunteer_profiles!memberships_user_id_fkey` cassé (FK pointe auth.users).
+  // Split en 2 queries.
+  const { data: activeMemberRows } = await supabase
     .from("memberships")
-    .select(`
-      user_id,
-      profile:volunteer_profiles!memberships_user_id_fkey (email)
-    `)
+    .select("user_id")
     .eq("event_id", ev.id)
     .eq("is_active", true);
+  const activeUserIds = Array.from(
+    new Set((activeMemberRows ?? []).map((m: any) => m.user_id).filter(Boolean)),
+  );
+  const { data: profileRows } = activeUserIds.length
+    ? await supabase
+        .from("volunteer_profiles")
+        .select("user_id, email")
+        .in("user_id", activeUserIds)
+    : { data: [] as any[] };
   const accountEmails = new Set(
-    (activeMembers ?? [])
-      .map((m: any) => (m.profile?.email ?? "").toLowerCase())
+    (profileRows ?? [])
+      .map((p: any) => (p.email ?? "").toLowerCase())
       .filter(Boolean),
   );
   const enrichedApps = (applications ?? []).map((a: any) => ({

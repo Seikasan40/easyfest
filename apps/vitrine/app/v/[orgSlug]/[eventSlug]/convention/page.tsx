@@ -13,10 +13,12 @@ export default async function ConventionPage({ params }: PageProps) {
   const { orgSlug, eventSlug } = await params;
   const supabase = createServerClient();
 
+  // Bug #9-10 fix : `location_name` n'existe pas → `location`. `president_name` et
+  // `president_title` étaient lus dans le rendu mais absents de l'embed → toujours undefined.
   const { data: ev } = await supabase
     .from("events")
-    .select(`id, name, starts_at, ends_at, location_name,
-      organization:organization_id (id, name, slug, legal_siret, legal_address)`)
+    .select(`id, name, starts_at, ends_at, location,
+      organization:organization_id (id, name, slug, legal_siret, legal_address, president_name, president_title)`)
     .eq("slug", eventSlug)
     .maybeSingle();
   if (!ev) return null;
@@ -73,7 +75,7 @@ export default async function ConventionPage({ params }: PageProps) {
             Convention de bénévolat
           </h1>
           <p className="mt-1 text-sm text-brand-ink/60">
-            {ev.name} · {dateRange} · {ev.location_name ?? "—"}
+            {ev.name} · {dateRange} · {(ev as any).location ?? "—"}
           </p>
         </header>
 

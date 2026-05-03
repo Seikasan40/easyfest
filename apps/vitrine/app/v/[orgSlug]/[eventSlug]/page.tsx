@@ -54,10 +54,12 @@ export default async function VolunteerHome({ params }: PageProps) {
     .maybeSingle();
 
   // Position info + chef d'équipe (post_lead partageant la même position_id)
+  // Bug #7 fix : embed `profiles:user_id (...)` cassé (pas de FK directe memberships→volunteer_profiles).
+  // Split en 2 queries.
   let position: any = null;
   let teamLead: any = null;
   if (ownMembership?.position_id) {
-    const [posRes, leadRes] = await Promise.all([
+    const [posRes, leadMembershipRes] = await Promise.all([
       (supabase as any)
         .from("positions")
         .select("id, slug, name, color, icon")
@@ -65,7 +67,7 @@ export default async function VolunteerHome({ params }: PageProps) {
         .maybeSingle(),
       (supabase as any)
         .from("memberships")
-        .select("user_id, profiles:user_id (id, first_name, last_name, full_name, email, phone, avatar_url)")
+        .select("user_id")
         .eq("event_id", eventRow.id)
         .eq("position_id", ownMembership.position_id)
         .eq("role", "post_lead")
@@ -74,7 +76,15 @@ export default async function VolunteerHome({ params }: PageProps) {
         .maybeSingle(),
     ]);
     position = posRes.data;
-    teamLead = (leadRes.data as any)?.profiles ?? null;
+    const leadUserId = (leadMembershipRes.data as any)?.user_id ?? null;
+    if (leadUserId) {
+      const { data: leadProfile } = await (supabase as any)
+        .from("volunteer_profiles")
+        .select("user_id, first_name, last_name, full_name, email, phone, avatar_url")
+        .eq("user_id", leadUserId)
+        .maybeSingle();
+      teamLead = leadProfile ?? null;
+    }
   }
 
   const { data: nextAssignment } = await supabase

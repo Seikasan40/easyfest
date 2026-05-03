@@ -144,9 +144,15 @@ export default async function RegiePlanningPage({ params, searchParams }: PagePr
     const pref = prefByEmail.get(email);
     const myAssignments = eventAssignments.filter((a: any) => a.volunteer_user_id === m.user_id);
     const positionIds = Array.from(new Set(myAssignments.map((a: any) => a.shift.position.id)));
+    // Bug #15 fix : fallback en cascade pour ne jamais afficher "—" tant qu'on a un email.
+    const computedName =
+      m.profile?.full_name ??
+      [m.profile?.first_name, m.profile?.last_name].filter(Boolean).join(" ") ??
+      m.profile?.email ??
+      "—";
     return {
       user_id: m.user_id,
-      full_name: m.profile?.full_name ?? "—",
+      full_name: computedName,
       first_name: m.profile?.first_name ?? null,
       avatar_url: m.profile?.avatar_url ?? null,
       phone: m.profile?.phone ?? null,

@@ -4,9 +4,13 @@
  * SSR. Lookup :
  * 1. La membership post_lead du user → position_id assignée
  * 2. La position (info)
- * 3. Les bénévoles affectés à cette position via leur membership.position_id
+ * 3. UNION : bénévoles via membership.position_id OU via assignments→shift→position_id
  *
- * Visualisation focused : équipe + shifts du poste, pas tout le festival.
+ * Bug #5-6 fix (audit-extreme 3 mai 2026) :
+ * - Ligne 79 : embed `profiles:user_id (...)` cassé (pas de FK directe memberships→volunteer_profiles)
+ * - Ligne 89 : `shifts.label` n'existe pas (vraie col : `notes`)
+ * - Logique : on ignorait les volunteers assignés via `assignments` (Anaïs/Sandy invisibles
+ *   alors qu'assignées sur Bar via DnD).
  */
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,7 +25,6 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { eventSlug } = await params;
-  // Le template root metadata.title est `%s · Easyfest`, donc on ne ré-ajoute pas Easyfest ici.
   return { title: `Mon poste · ${eventSlug}` };
 }
 
@@ -73,22 +76,60 @@ export default async function PostePage({ params }: PageProps) {
     .eq("id", ownMembership.position_id)
     .maybeSingle();
 
-  // Bénévoles assignés à ce poste
-  const { data: teamMemberships } = await (supabase as any)
-    .from("memberships")
-    .select("user_id, role, profiles:user_id (id, first_name, last_name, full_name, email, phone, avatar_url)")
-    .eq("event_id", eventRow.id)
-    .eq("position_id", ownMembership.position_id)
-    .eq("is_active", true);
-
-  const team = (teamMemberships ?? []).filter((m: any) => m.role === "volunteer");
-
-  // Shifts du poste
-  const { data: shifts } = await (supabase as any)
+  // (Bug #6 col `label` → `notes`) Shifts du poste — fetché en // pour computed assignment lookup
+  const { data: shifts, error: shiftsErr } = await (supabase as any)
     .from("shifts")
-    .select("id, starts_at, ends_at, needs_count, label")
+    .select("id, starts_at, ends_at, needs_count, notes")
     .eq("position_id", ownMembership.position_id)
     .order("starts_at", { ascending: true });
+  if (shiftsErr) console.error("[Poste] shifts failed:", shiftsErr.message);
+
+  const shiftIds = (shifts ?? []).map((s: any) => s.id);
+
+  // Bénévoles assignés via memberships.position_id (statique)
+  const { data: membershipRows, error: mErr } = await (supabase as any)
+    .from("memberships")
+    .select("user_id, role")
+    .eq("event_id", eventRow.id)
+    .eq("position_id", ownMembership.position_id)
+    .eq("is_active", true)
+    .eq("role", "volunteer");
+  if (mErr) console.error("[Poste] memberships failed:", mErr.message);
+
+  // Bénévoles assignés via assignments → shifts du poste (DnD)
+  const { data: assignmentRows, error: aErr } = shiftIds.length
+    ? await (supabase as any)
+        .from("assignments")
+        .select("volunteer_user_id, status")
+        .in("shift_id", shiftIds)
+        .in("status", ["pending", "validated"])
+    : { data: [] as any[], error: null };
+  if (aErr) console.error("[Poste] assignments failed:", aErr.message);
+
+  // UNION des user_ids (membership volunteer ∪ assignment)
+  const teamUserIds = Array.from(
+    new Set([
+      ...(membershipRows ?? []).map((m: any) => m.user_id),
+      ...(assignmentRows ?? []).map((a: any) => a.volunteer_user_id),
+    ]),
+  );
+
+  // Fix Bug #5 : 2e query séparée pour les profils (pas d'embed PostgREST cassé)
+  const { data: profileRows } = teamUserIds.length
+    ? await (supabase as any)
+        .from("volunteer_profiles")
+        .select("user_id, first_name, last_name, full_name, email, phone, avatar_url")
+        .in("user_id", teamUserIds)
+    : { data: [] as any[] };
+
+  const profilesByUserId = new Map<string, any>(
+    (profileRows ?? []).map((p: any) => [p.user_id, p]),
+  );
+
+  const team = teamUserIds.map((uid: string) => {
+    const p = profilesByUserId.get(uid) ?? {};
+    return { user_id: uid, profile: p };
+  });
 
   const dateFmt = (d?: string | null) =>
     d ? new Date(d).toLocaleString("fr-FR", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -132,8 +173,13 @@ export default async function PostePage({ params }: PageProps) {
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
             {team.map((m: any) => {
-              const p = m.profiles ?? {};
+              const p = m.profile ?? {};
               const initials = (p.first_name?.[0] ?? "?") + (p.last_name?.[0] ?? "");
+              const displayName =
+                p.full_name ??
+                [p.first_name, p.last_name].filter(Boolean).join(" ") ??
+                p.email ??
+                "—";
               return (
                 <article key={m.user_id} className="flex items-center gap-3 rounded-2xl border border-brand-ink/10 bg-white p-3">
                   {p.avatar_url ? (
@@ -145,7 +191,7 @@ export default async function PostePage({ params }: PageProps) {
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{p.full_name ?? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()}</p>
+                    <p className="truncate text-sm font-medium">{displayName}</p>
                     <div className="flex flex-wrap gap-x-3 text-xs text-brand-ink/60">
                       {p.phone && <a href={`tel:${p.phone}`} className="hover:text-[var(--theme-primary,_#FF5E5B)]">📞 {p.phone}</a>}
                       {p.email && <a href={`mailto:${p.email}`} className="truncate hover:text-[var(--theme-primary,_#FF5E5B)]">✉️ {p.email}</a>}
@@ -175,7 +221,7 @@ export default async function PostePage({ params }: PageProps) {
             {shifts.map((s: any) => (
               <li key={s.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brand-ink/10 bg-white p-3">
                 <div>
-                  <p className="text-sm font-medium">{s.label ?? "Shift"}</p>
+                  <p className="text-sm font-medium">{s.notes ?? "Shift"}</p>
                   <p className="text-xs text-brand-ink/60">
                     {dateFmt(s.starts_at)} → {dateFmt(s.ends_at)}
                   </p>

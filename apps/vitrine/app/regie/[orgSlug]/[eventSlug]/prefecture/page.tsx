@@ -30,9 +30,10 @@ export default async function PrefecturePage({ params }: PageProps) {
     redirect(`/auth/login?redirect=/regie/${orgSlug}/${eventSlug}/prefecture`);
   }
 
+  // Bug #8 fix : `location_name` n'existe pas (vraie col : `location`).
   const { data: ev } = await supabase
     .from("events")
-    .select("id, name, slug, starts_at, ends_at, location_name, location, organization:organization_id (name, slug, legal_siret, contact_email)")
+    .select("id, name, slug, starts_at, ends_at, location, organization:organization_id (name, slug, legal_siret, contact_email)")
     .eq("slug", eventSlug)
     .maybeSingle();
 
@@ -89,7 +90,7 @@ export default async function PrefecturePage({ params }: PageProps) {
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--theme-primary,_#FF5E5B)]">📦 Pack préfecture</p>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">{eventRow.name}</h1>
         <p className="mt-1 text-sm text-brand-ink/70">
-          Du {dateFmt(eventRow.starts_at)} au {dateFmt(eventRow.ends_at)} · {eventRow.location_name ?? eventRow.location ?? "—"}
+          Du {dateFmt(eventRow.starts_at)} au {dateFmt(eventRow.ends_at)} · {eventRow.location ?? "—"}
         </p>
       </header>
 

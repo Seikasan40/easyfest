@@ -74,18 +74,25 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
 
         <main className="flex-1 overflow-y-auto px-4 py-4">{children}</main>
 
+        {/* Bug #16 fix : sur mobile 412px, 6 colonnes étaient écrasées (mediators).
+            On bascule en flex avec scroll horizontal seulement si médiateur (6 onglets) ;
+            grille standard pour 5 onglets (chacun ~80px = 400px ≤ 412px). */}
         <nav
-          className={`sticky bottom-0 z-10 grid ${
-            isMediator ? "grid-cols-6" : "grid-cols-5"
-          } border-t border-brand-ink/10 bg-white/95 px-2 py-1.5 backdrop-blur`}
+          aria-label="Navigation bénévole"
+          className={`sticky bottom-0 z-10 border-t border-brand-ink/10 bg-white/95 backdrop-blur ${
+            isMediator
+              ? "flex overflow-x-auto px-2 py-1.5"
+              : "grid grid-cols-5 px-2 py-1.5"
+          }`}
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <NavItem href={`/v/${orgSlug}/${eventSlug}`} label="Accueil" emoji="🏠" />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/qr`} label="Mon QR" emoji="🎟️" />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/planning`} label="Planning" emoji="🗓️" />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/wellbeing`} label="Bien-être" emoji="💚" />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/feed`} label="Fil" emoji="📣" />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}`} label="Accueil" emoji="🏠" wide={isMediator} />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/qr`} label="Mon QR" emoji="🎟️" wide={isMediator} />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/planning`} label="Planning" emoji="🗓️" wide={isMediator} />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/wellbeing`} label="Bien-être" emoji="💚" wide={isMediator} />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/feed`} label="Fil" emoji="📣" wide={isMediator} />
           {isMediator && (
-            <NavItem href={`/v/${orgSlug}/${eventSlug}/safer`} label="Safer" emoji="🛡️" />
+            <NavItem href={`/v/${orgSlug}/${eventSlug}/safer`} label="Safer" emoji="🛡️" wide />
           )}
         </nav>
       </div>
@@ -93,11 +100,23 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
   );
 }
 
-function NavItem({ href, label, emoji }: { href: string; label: string; emoji: string }) {
+function NavItem({
+  href,
+  label,
+  emoji,
+  wide = false,
+}: {
+  href: string;
+  label: string;
+  emoji: string;
+  wide?: boolean;
+}) {
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-medium text-brand-ink/70 hover:bg-brand-ink/5"
+      className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-medium text-brand-ink/70 hover:bg-brand-ink/5 ${
+        wide ? "min-w-[68px] flex-shrink-0" : ""
+      }`}
     >
       <span aria-hidden className="text-lg">
         {emoji}

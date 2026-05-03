@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import type { ThemePreset } from "@easyfest/shared";
@@ -20,6 +21,7 @@ interface ThemePickerProps {
 }
 
 export function ThemePicker(props: ThemePickerProps) {
+  const router = useRouter();
   const [selectedSlug, setSelectedSlug] = useState(props.currentSlug);
   const [feedback, setFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -38,6 +40,10 @@ export function ThemePicker(props: ThemePickerProps) {
       });
       if (res.ok) {
         setFeedback({ type: "ok", msg: "Thème appliqué — toutes les pages sont mises à jour." });
+        // Bug #14 fix : revalidatePath côté serveur ne re-render PAS la page courante
+        // (TenantThemeProvider du layout) tant qu'on ne navigue pas. router.refresh()
+        // force Next.js à re-fetcher les RSC et donc à appliquer immédiatement le thème.
+        router.refresh();
       } else {
         setFeedback({ type: "err", msg: res.error ?? "Erreur inattendue" });
         setSelectedSlug(props.currentSlug);
@@ -164,6 +170,7 @@ function CustomSection(props: CustomSectionProps) {
   const [text, setText] = useState(props.initialText ?? "#1A1A1A");
   const [pending, startTransition] = useTransition();
 
+  const router = useRouter();
   function handleSave() {
     if (!props.isPremium || pending) return;
     startTransition(async () => {
@@ -178,6 +185,7 @@ function CustomSection(props: CustomSectionProps) {
       });
       if (res.ok) {
         props.onResult({ type: "ok", msg: "Couleurs personnalisées enregistrées." });
+        router.refresh();
       } else {
         props.onResult({ type: "err", msg: res.error ?? "Erreur inattendue" });
       }

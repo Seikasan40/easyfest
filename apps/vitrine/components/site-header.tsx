@@ -21,7 +21,7 @@ export async function SiteHeader() {
         <Link
           href="/"
           aria-label="Easyfest, accueil"
-          className="flex items-center transition hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-easyfest-coral"
+          className="inline-flex min-h-[44px] items-center transition hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-easyfest-coral"
         >
           <Logo variant="horizontal" size={36} priority />
         </Link>
@@ -29,13 +29,13 @@ export async function SiteHeader() {
         <nav className="hidden items-center gap-1 md:flex">
           <Link
             href="/icmpaca"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/70 transition hover:bg-brand-ink/5 hover:text-brand-ink"
+            className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-3 text-sm font-medium text-brand-ink/70 transition hover:bg-brand-ink/5 hover:text-brand-ink"
           >
             Festivals
           </Link>
           <Link
             href="/legal/privacy"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/70 transition hover:bg-brand-ink/5 hover:text-brand-ink"
+            className="inline-flex min-h-[44px] items-center rounded-lg px-3 py-3 text-sm font-medium text-brand-ink/70 transition hover:bg-brand-ink/5 hover:text-brand-ink"
           >
             Confidentialité
           </Link>
@@ -90,19 +90,28 @@ export function SiteFooter() {
             <h3 className="text-xs font-semibold uppercase tracking-widest text-brand-ink/50">
               Navigation
             </h3>
-            <ul className="mt-3 space-y-2 text-sm">
+            <ul className="mt-3 space-y-1 text-sm">
               <li>
-                <Link href="/" className="text-brand-ink/70 hover:text-brand-coral">
+                <Link
+                  href="/"
+                  className="inline-flex min-h-[44px] items-center py-3 text-brand-ink/70 hover:text-brand-coral"
+                >
                   Accueil
                 </Link>
               </li>
               <li>
-                <Link href="/icmpaca" className="text-brand-ink/70 hover:text-brand-coral">
+                <Link
+                  href="/icmpaca"
+                  className="inline-flex min-h-[44px] items-center py-3 text-brand-ink/70 hover:text-brand-coral"
+                >
                   Festivals partenaires
                 </Link>
               </li>
               <li>
-                <Link href="/auth/login" className="text-brand-ink/70 hover:text-brand-coral">
+                <Link
+                  href="/auth/login"
+                  className="inline-flex min-h-[44px] items-center py-3 text-brand-ink/70 hover:text-brand-coral"
+                >
                   Connexion
                 </Link>
               </li>
@@ -113,16 +122,19 @@ export function SiteFooter() {
             <h3 className="text-xs font-semibold uppercase tracking-widest text-brand-ink/50">
               Légal & sécurité
             </h3>
-            <ul className="mt-3 space-y-2 text-sm">
+            <ul className="mt-3 space-y-1 text-sm">
               <li>
-                <Link href="/legal/privacy" className="text-brand-ink/70 hover:text-brand-coral">
+                <Link
+                  href="/legal/privacy"
+                  className="inline-flex min-h-[44px] items-center py-3 text-brand-ink/70 hover:text-brand-coral"
+                >
                   Politique de confidentialité
                 </Link>
               </li>
-              <li className="text-brand-ink/60">
+              <li className="py-1 text-brand-ink/60">
                 DPA Supabase EU signé · 29 avril 2026
               </li>
-              <li className="text-brand-ink/60">RGPD-clean · Données EU only</li>
+              <li className="py-1 text-brand-ink/60">RGPD-clean · Données EU only</li>
             </ul>
           </div>
         </div>

@@ -1,0 +1,4 @@
+# Playwright artifacts (Phase 4 V6 mobile-visual audit)
+test-results/
+playwright-report/
+playwright/.cache/

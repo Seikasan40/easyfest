@@ -33,12 +33,12 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
     id: `v-${v.user_id}`,
   });
 
-  // Trigger commun pour tap mobile + long-press desktop
+  // Trigger commun pour tap mobile + long-press desktop.
+  // Bug #16 fix mobile : on ouvre TOUJOURS le menu d'équipes — le menu lui-même
+  // affiche le warning "Compte pas encore créé" pour pending_account et propose
+  // d'inviter. Avant : tap court sur pre-volunteer ne faisait que rappeler
+  // d'inviter via toast → pas de menu → bénévoles pré-comptes immobilisés en mobile.
   const triggerMenu = useCallback(() => {
-    if (v.pending_account) {
-      if (v.email) onInviteRequest?.(v.email);
-      return;
-    }
     openMenu(
       {
         user_id: v.user_id,
@@ -50,6 +50,11 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
       },
       currentTeamId,
     );
+    // Hint additionnel pour les pre-volunteers : on signale aussi l'option Inviter,
+    // mais le menu reste accessible (le serveur fera le upgrade auto si possible).
+    if (v.pending_account && v.email) {
+      onInviteRequest?.(v.email);
+    }
   }, [
     currentTeamId,
     onInviteRequest,
@@ -94,9 +99,15 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
     [triggerMenu],
   );
 
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
-    : undefined;
+  // Bug #16 fix mobile DnD : `touch-action: none` empêche le browser d'interpréter
+  // le touch comme un scroll vertical de la page, ce qui préemptait le long-press
+  // 250ms de TouchSensor. Sans ça, sur mobile, dès que le doigt bouge un peu, la
+  // page scroll au lieu d'activer le drag. Avec `none`, la page reste figée pendant
+  // le touch sur la carte → TouchSensor peut détecter le long-press correctement.
+  const baseStyle: React.CSSProperties = { touchAction: "none" };
+  const style: React.CSSProperties = transform
+    ? { ...baseStyle, transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
+    : baseStyle;
 
   const matchesCurrent = !!currentTeamSlug && v.preferred_slugs.includes(currentTeamSlug);
   const wantedTeams = v.preferred_slugs.slice(0, 3);

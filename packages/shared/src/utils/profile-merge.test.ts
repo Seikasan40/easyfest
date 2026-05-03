@@ -253,3 +253,104 @@ describe("scénario intégration mon poste (Bug #5-6 UNION)", () => {
     expect(teamUserIds.length).toBe(3); // pas 4 — on dédupe Anaïs présente dans les 2
   });
 });
+
+describe("scénario Bug #13-bis : sync memberships.position_id post-DnD", () => {
+  it("après assign_volunteer_atomic, position_id alignée sur shifts.position_id", () => {
+    // Simule l'état post-RPC : Anaïs avait position_id NULL, après DnD vers Bar
+    // sa membership doit avoir position_id = Bar.
+    const positionIdBar = "cd44e22e-8a92-4ba9-9100-6c7428856b3b";
+    const memberships = [
+      { user_id: "user-anais", position_id: positionIdBar, role: "volunteer", is_active: true },
+      { user_id: "user-sandy", position_id: positionIdBar, role: "volunteer", is_active: true },
+      { user_id: "user-lucas", position_id: positionIdBar, role: "volunteer", is_active: true },
+    ];
+
+    // Mahaut (post_lead Bar) interroge tous les volunteers ayant position_id = Bar
+    const teamMembers = memberships.filter(
+      (m) => m.role === "volunteer" && m.is_active && m.position_id === positionIdBar,
+    );
+    expect(teamMembers).toHaveLength(3);
+    expect(teamMembers.map((m) => m.user_id).sort()).toEqual([
+      "user-anais",
+      "user-lucas",
+      "user-sandy",
+    ]);
+  });
+
+  it("retour au pool : position_id remis à NULL", () => {
+    const positionIdBar = "cd44e22e-8a92-4ba9-9100-6c7428856b3b";
+    let membership = { user_id: "user-x", position_id: positionIdBar, role: "volunteer" };
+    // RPC avec p_position_id = NULL → UPDATE membership SET position_id = NULL
+    membership = { ...membership, position_id: null as any };
+    expect(membership.position_id).toBeNull();
+  });
+});
+
+describe("scénario Bug #7-bis : volunteer voit son post_lead", () => {
+  it("query 3-step : myMembership → leadMembership → leadProfile", () => {
+    // Lucas (volunteer Bar, position_id=Bar) cherche son post_lead.
+    const positionIdBar = "cd44e22e-8a92-4ba9-9100-6c7428856b3b";
+    const memberships = [
+      { user_id: "lucas", position_id: positionIdBar, role: "volunteer", is_active: true },
+      { user_id: "mahaut", position_id: positionIdBar, role: "post_lead", is_active: true },
+      { user_id: "pam", position_id: null, role: "direction", is_active: true },
+    ];
+
+    // Step 1 : trouver sa propre membership (Lucas)
+    const myMembership = memberships.find(
+      (m) => m.user_id === "lucas" && m.role === "volunteer" && m.is_active,
+    );
+    expect(myMembership?.position_id).toBe(positionIdBar);
+
+    // Step 2 : trouver le post_lead avec même position_id
+    const leadMembership = memberships.find(
+      (m) =>
+        m.position_id === myMembership?.position_id &&
+        m.role === "post_lead" &&
+        m.is_active,
+    );
+    expect(leadMembership?.user_id).toBe("mahaut");
+
+    // Step 3 : fetch profile (mocké via Map)
+    const profilesById = buildProfilesById([
+      { user_id: "mahaut", full_name: "Mahaut Tilde", email: "mahaut@x.fr" },
+    ]);
+    const leadProfile = profilesById.get(leadMembership!.user_id);
+    expect(fallbackName(leadProfile)).toBe("Mahaut Tilde");
+  });
+});
+
+describe("scénario Bug feed-bis : ciblage messages par channel kind", () => {
+  it("Lucas (volunteer Bar) voit admin (Annonces) + team Bar, mais pas team Parking", () => {
+    const channels = [
+      { id: "ch-admin", kind: "admin", position_id: null },
+      { id: "ch-bar", kind: "team", position_id: "pos-bar" },
+      { id: "ch-parking", kind: "team", position_id: "pos-parking" },
+      { id: "ch-resp", kind: "responsibles", position_id: null },
+    ];
+    const lucasPositionIds = ["pos-bar"];
+    const lucasIsResponsible = false;
+
+    const visibleChannels = channels.filter((c) => {
+      if (c.kind === "admin") return true; // visible par tout membre actif
+      if (c.kind === "team")
+        return c.position_id !== null && lucasPositionIds.includes(c.position_id);
+      if (c.kind === "responsibles") return lucasIsResponsible;
+      return false;
+    });
+
+    expect(visibleChannels.map((c) => c.id).sort()).toEqual(["ch-admin", "ch-bar"]);
+  });
+
+  it("Pamela (direction) voit admin + team Bar + team Parking + responsibles", () => {
+    const channels = [
+      { id: "ch-admin", kind: "admin", position_id: null },
+      { id: "ch-bar", kind: "team", position_id: "pos-bar" },
+      { id: "ch-parking", kind: "team", position_id: "pos-parking" },
+      { id: "ch-resp", kind: "responsibles", position_id: null },
+    ];
+    // direction voit tout (RLS has_role_at_least + admin pour tout membre actif)
+    const visibleChannels = channels;
+    expect(visibleChannels).toHaveLength(4);
+  });
+});

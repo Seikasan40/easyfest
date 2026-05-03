@@ -96,12 +96,17 @@ export function VolunteerAssignMenu({
           </button>
         </div>
 
-        {isPending ? (
-          <div className="p-4 text-sm text-brand-ink/70">
-            ⏳ Compte pas encore créé. Invite ce bénévole avant de l&apos;assigner.
+        {/* Bug #16 fix : on affiche TOUJOURS la liste d'équipes, même pour
+            pending_account. Le RPC assign_volunteer_atomic auto-upgrade le
+            pre-volunteer en bénévole réel si auth.users + application validée
+            existent. On conserve juste un banner d'info au-dessus de la liste. */}
+        {isPending && (
+          <div className="border-b border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+            <strong>⏳ Compte pas encore créé.</strong> Le bénévole sera invité automatiquement
+            si tu l&apos;assignes — il devra activer son compte avant d&apos;accéder à son espace.
           </div>
-        ) : (
-          <div className="overflow-y-auto p-2" style={{ maxHeight: "60vh" }}>
+        )}
+        <div className="overflow-y-auto p-2" style={{ maxHeight: "60vh" }}>
             <ul className="space-y-1.5">
               {teams.map((t) => {
                 const isCurrent = t.id === currentTeamId;
@@ -151,7 +156,6 @@ export function VolunteerAssignMenu({
               📋 Renvoyer au pool
             </button>
           </div>
-        )}
       </div>
     </div>
   );

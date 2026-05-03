@@ -54,7 +54,7 @@ export default async function InscriptionPage({ params }: PageProps) {
 
       <main className="flex-1">
         <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-          <Link href={`/${orgSlug}/${eventSlug}`} className="text-sm font-medium text-brand-ink/60 transition hover:text-brand-coral">← Retour au festival</Link>
+          <Link href={`/${orgSlug}/${eventSlug}`} className="inline-flex min-h-[44px] items-center text-sm font-medium text-brand-ink/60 transition hover:text-brand-coral">← Retour au festival</Link>
 
           <header className="mt-6 mb-8 rounded-2xl bg-white p-6 shadow-soft">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-coral">{e.organization?.name} · Candidature bénévole</p>

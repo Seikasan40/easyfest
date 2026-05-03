@@ -44,7 +44,7 @@ export default async function EventPage({ params }: PageProps) {
         <div className="absolute right-10 top-10 -z-10 h-72 w-72 rounded-full bg-brand-coral/15 blur-3xl" aria-hidden />
 
         <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-          <Link href={`/${orgSlug}`} className="text-sm font-medium text-brand-ink/60 transition hover:text-brand-coral">← {e.organization?.name}</Link>
+          <Link href={`/${orgSlug}`} className="inline-flex min-h-[44px] items-center text-sm font-medium text-brand-ink/60 transition hover:text-brand-coral">← {e.organization?.name}</Link>
 
           <div className="mt-6 grid items-end gap-8 md:grid-cols-[2fr_1fr]">
             <div>

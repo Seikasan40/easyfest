@@ -36,7 +36,7 @@ export default async function OrgPage({ params }: PageProps) {
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-cream to-white/60">
         <div className="absolute right-0 top-0 -z-10 h-96 w-96 rounded-full bg-brand-amber/10 blur-3xl" aria-hidden />
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-          <Link href="/" className="text-sm font-medium text-brand-ink/60 transition hover:text-brand-coral">← Accueil</Link>
+          <Link href="/" className="inline-flex min-h-[44px] items-center text-sm font-medium text-brand-ink/60 transition hover:text-brand-coral">← Accueil</Link>
           <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-brand-coral">Espace inscription bénévoles</p>
           <h1 className="mt-2 font-display text-5xl font-bold tracking-tight md:text-6xl">{(org as any).name}</h1>
           <p className="mt-4 max-w-2xl text-brand-ink/70">

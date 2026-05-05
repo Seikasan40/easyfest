@@ -77,29 +77,22 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
 
         <main className="flex-1 overflow-y-auto px-4 py-4">{children}</main>
 
-        {/* Bug #16 fix : sur mobile 412px, 6 colonnes étaient écrasées (mediators).
-            On bascule en flex avec scroll horizontal seulement si médiateur (6 onglets) ;
-            grille standard pour 5 onglets (chacun ~80px = 400px ≤ 412px). */}
+        {/* Navigation 6 onglets — Safer visible pour tous les bénévoles.
+            Flex + scroll horizontal pour éviter l'écrasement sur mobile 390px. */}
         <nav
           aria-label="Navigation bénévole"
-          className={`sticky bottom-0 z-10 border-t border-brand-ink/10 bg-white/95 backdrop-blur ${
-            isMediator
-              ? "flex overflow-x-auto px-2 pt-1.5"
-              : "grid grid-cols-5 px-2 pt-1.5"
-          }`}
+          className="sticky bottom-0 z-10 border-t border-brand-ink/10 bg-white/95 backdrop-blur flex overflow-x-auto px-2 pt-1.5"
           style={{
             WebkitOverflowScrolling: "touch",
             paddingBottom: "max(0.375rem, env(safe-area-inset-bottom))",
           }}
         >
-          <NavItem href={`/v/${orgSlug}/${eventSlug}`} label="Accueil" emoji="🏠" wide={isMediator} />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/qr`} label="Mon QR" emoji="🎟️" wide={isMediator} />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/planning`} label="Planning" emoji="🗓️" wide={isMediator} />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/wellbeing`} label="Bien-être" emoji="💚" wide={isMediator} />
-          <NavItem href={`/v/${orgSlug}/${eventSlug}/feed`} label="Fil" emoji="📣" wide={isMediator} />
-          {isMediator && (
-            <NavItem href={`/v/${orgSlug}/${eventSlug}/safer`} label="Safer" emoji="🛡️" wide />
-          )}
+          <NavItem href={`/v/${orgSlug}/${eventSlug}`} label="Accueil" emoji="🏠" wide />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/qr`} label="Mon QR" emoji="🎟️" wide />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/planning`} label="Planning" emoji="🗓️" wide />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/chat`} label="Chat" emoji="💬" wide />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/feed`} label="Fil" emoji="📣" wide />
+          <NavItem href={`/v/${orgSlug}/${eventSlug}/safer`} label="Safer" emoji="🛡️" wide />
         </nav>
       </div>
     </TenantThemeProvider>

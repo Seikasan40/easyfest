@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { createServerClient } from "@/lib/supabase/server";
 
 import { SaferAlertActions } from "./SaferAlertActions";
+import { SaferReportForm } from "./SaferReportForm";
 
 export const dynamic = "force-dynamic";
 
@@ -60,14 +60,17 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
   const membership = all[0];
   const m = membership as any;
   const isMediator = all.some((mb) => mb.is_mediator === true || mb.role === "direction");
-  if (!isMediator) {
-    // Volunteer normal : pas l'autorisation. Redirect vers son hub event.
-    redirect(`/v/${orgSlug}/${eventSlug}`);
-  }
+  // Plus de redirect : les bénévoles non-médiateurs voient le formulaire de signalement.
 
   const eventId = m.event?.id as string;
   const eventName = m.event?.name as string;
 
+  // Bénévole non-médiateur → formulaire de signalement uniquement
+  if (!isMediator) {
+    return <SaferReportForm orgSlug={orgSlug} eventSlug={eventSlug} />;
+  }
+
+  // Médiateur / direction → tableau de bord des alertes
   const { data: alerts } = await supabase
     .from("safer_alerts")
     .select("id, kind, status, description, location_hint, created_at, acknowledged_at, resolved_at, mediator_user_id")
@@ -88,7 +91,7 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
         </p>
         <h1 className="mt-1 font-display text-2xl font-bold leading-tight">{eventName}</h1>
         <p className="mt-2 text-sm text-brand-ink/70">
-          Tu es désigné·e comme médiateur·ice Safer pour ce festival. Cette page liste les alertes en cours et celles qui te sont assignées.
+          Tu es désigné·e comme médiateur·ice Safer pour cet événement. Cette page liste les alertes en cours et celles qui te sont assignées.
         </p>
       </header>
 
@@ -111,7 +114,7 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
       <SectionGroup
         title="📋 Historique récent"
         alerts={otherAlerts}
-        emptyText="Pas d'historique sur ce festival."
+        emptyText="Pas d'historique sur cet événement."
         compact
         currentUserId={userData.user.id}
         orgSlug={orgSlug}

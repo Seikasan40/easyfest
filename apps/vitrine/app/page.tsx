@@ -47,12 +47,12 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="mt-8 max-w-2xl text-balance text-lg text-brand-ink/70 md:text-xl">
-              Easyfest remplace ton tableau Excel partagé, ton WhatsApp et ton outil d'inscription par une seule app pensée pour les organisateurs de festivals associatifs.
+              Easyfest remplace ton tableau Excel partagé, ton WhatsApp et ton outil d'inscription par une seule app pensée pour les organisateurs d'événements associatifs.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link href="/demande-festival" className="rounded-xl bg-brand-coral px-7 py-3.5 text-base font-medium text-white shadow-soft transition hover:opacity-90 hover:shadow-glow">
-                🚀 Lancer mon festival
+                🚀 Lancer mon événement
               </Link>
               <Link href="/icmpaca" className="rounded-xl border border-brand-ink/15 bg-white/70 px-7 py-3.5 text-base font-medium text-brand-ink backdrop-blur transition hover:bg-white">
                 Découvrir les festivals
@@ -79,7 +79,7 @@ export default function HomePage() {
 
       {/* ProblemSolution — avant/après */}
       <ProblemSolution
-        problemTitle="Aujourd'hui, organiser un festival, c'est..."
+        problemTitle="Aujourd'hui, organiser un événement, c'est..."
         problems={[
           { emoji: "📊", text: "Un Excel partagé qui se casse à chaque modif" },
           { emoji: "💬", text: "5 groupes WhatsApp qui se contredisent" },
@@ -91,7 +91,7 @@ export default function HomePage() {
           { emoji: "🎟️", text: "Un dashboard unique pour tes bénévoles" },
           { emoji: "📱", text: "Une app que chaque rôle utilise (régie, scan, équipe)" },
           { emoji: "✓", text: "1 source de vérité, 0 conflits, RGPD-clean" },
-          { emoji: "📦", text: "Pack préfecture en 1 clic, plus 3 jours de paperasse" },
+          { emoji: "🛡️", text: "Safer Space intégré — bien-être et signalements centralisés" },
         ]}
       />
 
@@ -137,9 +137,9 @@ export default function HomePage() {
 
       {/* CTA final */}
       <CTASection
-        title="Prêt·e à organiser ton festival sans stresser ?"
+        title="Prêt·e à organiser ton événement sans stresser ?"
         subtitle="Compte gratuit en 30 secondes. Aucune carte bleue requise."
-        primaryCta={{ label: "🚀 Lancer mon festival", href: "/demande-festival" }}
+        primaryCta={{ label: "🚀 Lancer mon événement", href: "/demande-festival" }}
         secondaryCta={{ label: "Voir les tarifs", href: "/pricing" }}
         variant="coral"
       />

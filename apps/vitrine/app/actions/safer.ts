@@ -1,14 +1,15 @@
 "use server";
 
 /**
- * Server actions Safer Space — médiateurs + direction.
+ * Server actions Safer Space.
+ * - submitSaferAlert   : n'importe quel bénévole actif peut signaler un incident
  * - acknowledgeSaferAlert : un médiateur prend en charge une alerte open
  * - resolveSaferAlert : le médiateur en charge marque l'alerte résolue
  * - markFalseAlarm : le médiateur en charge marque l'alerte comme fausse alerte
  *
- * Sécurité : on vérifie en DB que le user est bien is_mediator OU direction sur l'event.
- * Le service client est utilisé uniquement APRÈS le check, pour bypasser RLS sur l'UPDATE
- * (les médiateurs anon n'ont pas de droits UPDATE direct sur safer_alerts).
+ * Sécurité : on vérifie en DB que le user a bien une membership active sur l'event.
+ * Pour les actions médiateur, on vérifie en plus is_mediator OU direction.
+ * Le service client est utilisé APRÈS le check pour bypasser RLS sur l'UPDATE.
  */
 
 import { revalidatePath } from "next/cache";
@@ -26,6 +27,70 @@ interface AlertActionInput {
   eventSlug: string;
   notes?: string;
 }
+
+// ─── Signalement par un bénévole quelconque ──────────────────────────────────
+
+interface SubmitAlertInput {
+  orgSlug: string;
+  eventSlug: string;
+  kind: string;
+  description?: string;
+  locationHint?: string;
+}
+
+export async function submitSaferAlert(input: SubmitAlertInput): Promise<ActionResult> {
+  const supabase = createServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Non authentifié" };
+
+  // Vérifier qu'il a une membership active sur cet event
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("id, event:event_id (id, slug, organization:organization_id (slug))")
+    .eq("user_id", userData.user.id)
+    .eq("is_active", true)
+    .filter("event.slug", "eq", input.eventSlug)
+    .filter("event.organization.slug", "eq", input.orgSlug);
+
+  const all = (memberships ?? []) as any[];
+  if (all.length === 0) return { ok: false, error: "Aucune membership active sur cet événement" };
+  const eventId = all.find((mb) => mb.event?.id)?.event?.id as string | undefined;
+  if (!eventId) return { ok: false, error: "Événement introuvable" };
+
+  const validKinds = ["harassment", "physical_danger", "medical", "wellbeing_red", "other"];
+  if (!validKinds.includes(input.kind)) return { ok: false, error: "Type d'incident invalide" };
+
+  let admin;
+  try {
+    admin = createServiceClient();
+  } catch {
+    return { ok: false, error: "Configuration serveur indisponible" };
+  }
+
+  const { error } = await admin.from("safer_alerts").insert({
+    event_id: eventId,
+    kind: input.kind,
+    description: input.description?.trim() ?? null,
+    location_hint: input.locationHint?.trim() ?? null,
+    status: "open",
+    reporter_user_id: userData.user.id,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  await admin.from("audit_log").insert({
+    event_id: eventId,
+    user_id: userData.user.id,
+    action: "safer.alert.submitted",
+    payload: { kind: input.kind },
+  });
+
+  revalidatePath(`/v/${input.orgSlug}/${input.eventSlug}/safer`);
+  revalidatePath(`/regie/${input.orgSlug}/${input.eventSlug}/safer`);
+  return { ok: true };
+}
+
+// ─── Auth médiateur ───────────────────────────────────────────────────────────
 
 async function checkMediatorAuth(eventSlug: string, orgSlug: string) {
   const supabase = createServerClient();

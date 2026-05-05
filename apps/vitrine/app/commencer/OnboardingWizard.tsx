@@ -110,12 +110,12 @@ export default function OnboardingWizard({ templates }: Props) {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  // Validations par étape
+  // Validations par étape — slugs auto-générés, on valide juste la longueur minimale
   const canContinueOrg =
-    orgName.trim().length >= 2 && /^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$/.test(orgSlug);
+    orgName.trim().length >= 2 && orgSlug.length >= 2;
   const canContinueEvent =
     eventName.trim().length >= 2 &&
-    /^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$/.test(eventSlug) &&
+    eventSlug.length >= 2 &&
     new Date(eventEnds) > new Date(eventStarts);
   const canContinueTemplate = true; // template optionnel
 
@@ -224,23 +224,10 @@ export default function OnboardingWizard({ templates }: Props) {
                 autoFocus
               />
             </label>
-            <label className="block text-sm">
-              <span className="text-brand-ink font-medium">Slug URL</span>
-              <span className="text-brand-ink/50 ml-2 text-xs">
-                easyfest.app/<strong>{orgSlug || "mon-asso"}</strong>
-              </span>
-              <input
-                type="text"
-                value={orgSlug}
-                onChange={(e) => {
-                  setOrgSlug(slugify(e.target.value));
-                  setOrgSlugTouched(true);
-                }}
-                placeholder="zik-en-paca"
-                data-testid="org-slug"
-                className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 font-mono text-base focus:outline-none"
-              />
-            </label>
+            {/* Slug org auto-généré depuis le nom — champ masqué, URL prévisualisée discrètement */}
+            <p className="text-brand-ink/40 text-xs">
+              URL : easyfest.app/<strong>{orgSlug || "mon-asso"}</strong>
+            </p>
           </div>
 
           <div className="mt-6 flex justify-end">
@@ -278,22 +265,10 @@ export default function OnboardingWizard({ templates }: Props) {
                 className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 text-base focus:outline-none"
               />
             </label>
-            <label className="block text-sm">
-              <span className="text-brand-ink font-medium">Slug URL</span>
-              <span className="text-brand-ink/50 ml-2 text-xs">
-                /{orgSlug || "asso"}/<strong>{eventSlug || "mon-event"}</strong>
-              </span>
-              <input
-                type="text"
-                value={eventSlug}
-                onChange={(e) => {
-                  setEventSlug(slugify(e.target.value));
-                  setEventSlugTouched(true);
-                }}
-                data-testid="event-slug"
-                className="border-brand-ink/15 focus:border-brand-coral mt-1 h-11 w-full rounded-lg border px-3 py-2 font-mono text-base focus:outline-none"
-              />
-            </label>
+            {/* Slug event auto-généré depuis le nom — champ masqué, URL prévisualisée discrètement */}
+            <p className="text-brand-ink/40 text-xs">
+              URL : /{orgSlug || "asso"}/<strong>{eventSlug || "mon-event"}</strong>
+            </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block text-sm">
                 <span className="text-brand-ink font-medium">Début</span>

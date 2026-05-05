@@ -14,7 +14,7 @@ export const REGIE_TABS: RegieTab[] = [
   { key: "sponsors", hrefSuffix: "/sponsors", label: "Sponsors", emoji: "🤝", matchPrefix: "/sponsors" },
   { key: "plan", hrefSuffix: "/plan", label: "Plan", emoji: "🗺️", matchPrefix: "/plan" },
   { key: "safer", hrefSuffix: "/safer", label: "Safer", emoji: "🛟", matchPrefix: "/safer" },
-  { key: "messages", hrefSuffix: "/messages", label: "Messages", emoji: "💬", matchPrefix: "/messages" },
-  { key: "prefecture", hrefSuffix: "/prefecture", label: "Préfecture", emoji: "📦", matchPrefix: "/prefecture" },
+  { key: "messages", hrefSuffix: "/messages", label: "Diffusion", emoji: "📣", matchPrefix: "/messages" },
+  { key: "chat", hrefSuffix: "/chat", label: "Chat", emoji: "💬", matchPrefix: "/chat" },
   { key: "theme", hrefSuffix: "/settings/theme", label: "Thème", emoji: "🎨", matchPrefix: "/settings/theme" },
 ];

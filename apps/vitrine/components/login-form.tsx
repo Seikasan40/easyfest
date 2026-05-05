@@ -167,18 +167,6 @@ export function LoginForm() {
         </form>
       )}
 
-      <details className="rounded-xl border border-brand-ink/10 bg-white/50 p-4 text-xs text-brand-ink/60">
-        <summary className="cursor-pointer font-medium">🔍 Comptes de démo (test dimanche)</summary>
-        <ul className="mt-3 space-y-1.5 font-mono">
-          <li><strong>gaetancarlo1@gmail.com</strong> / easyfest-admin-2026 → Régie</li>
-          <li><strong>pam@easyfest.test</strong> / easyfest-demo-2026 → Régie</li>
-          <li><strong>dorothee@easyfest.test</strong> / easyfest-demo-2026 → Resp. bénévoles</li>
-          <li><strong>mahaut@easyfest.test</strong> / easyfest-demo-2026 → Resp. Bar</li>
-          <li><strong>antoine@easyfest.test</strong> / easyfest-demo-2026 → Staff terrain</li>
-          <li><strong>lucas@easyfest.test</strong> / easyfest-demo-2026 → Bénévole</li>
-          <li><strong>sandy@easyfest.test</strong> / easyfest-demo-2026 → Resp. bénévoles</li>
-        </ul>
-      </details>
     </div>
   );
 }

@@ -5,44 +5,29 @@ import { ROLE_CARDS_ORDER, ROLE_DEFINITIONS, type RoleKind } from "@easyfest/sha
 import { createServerClient } from "@/lib/supabase/server";
 import { onboardCurrentUser } from "@/app/actions/onboard";
 
-const EMOJI: Record<RoleKind, string> = {
-  volunteer: "🎟️",
-  post_lead: "🧑‍🤝‍🧑",
-  staff_scan: "📷",
-  volunteer_lead: "📋",
-  direction: "🎛️",
+const DARK = "#1A3828";
+const MUTED = "#7A7060";
+const BORDER = "#E5DDD0";
+
+const ROLE_ICON: Record<RoleKind, { emoji: string; bg: string }> = {
+  volunteer:       { emoji: "🎟️", bg: "rgba(26,56,40,0.10)" },
+  post_lead:       { emoji: "🧑‍🤝‍🧑", bg: "rgba(26,56,40,0.10)" },
+  staff_scan:      { emoji: "📷",  bg: "rgba(196,154,44,0.15)" },
+  volunteer_lead:  { emoji: "📋",  bg: "rgba(26,56,40,0.10)" },
+  direction:       { emoji: "🎛️", bg: "rgba(196,154,44,0.15)" },
 };
 
-/**
- * Picker home — affiche uniquement les cartes pour les rôles dont l'utilisateur dispose.
- */
 export default async function HubPage() {
   const supabase = createServerClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/auth/login?redirect=/hub");
 
-  // Upgrade auto : si l'user a des applications validées sans encore de membership, on les onboard
   await onboardCurrentUser();
 
-  // Bug #18 fix (3 mai 2026 ~17h45 UTC) : ne PAS utiliser d'embed PostgREST
-  // imbriqué (event:event_id (... organization:organization_id (...))) dans
-  // une page critique comme /hub. Cause directe : un cycle de policies RLS
-  // sur memberships (migration 20260503020000 ajoutait une policy avec
-  // sub-query sur la même table) provoquait `42P17 infinite recursion
-  // detected` côté Postgres → `data` arrivait à `null` → toutes les pages
-  // affichaient "Tu n'as pas encore d'affectation" pour 100% des comptes.
-  //
-  // Le fix RLS lui-même est dans 20260503040000_fix_memberships_rls_recursion.sql.
-  // Ici on ajoute une défense en profondeur : split en queries séparées sans
-  // embed, avec error destructuré. Si une RLS pathologique réapparaît un
-  // jour, on log + on affiche un état d'erreur claire au user au lieu de
-  // tomber silencieusement sur "Salut bénévole".
   const [{ data: memberships, error: memErr }, { data: profile }] = await Promise.all([
     supabase
       .from("memberships")
-      .select(
-        "role, position_id, event_id, is_entry_scanner, is_mediator, is_active",
-      )
+      .select("role, position_id, event_id, is_entry_scanner, is_mediator, is_active")
       .eq("user_id", userData.user.id)
       .eq("is_active", true),
     supabase
@@ -56,7 +41,6 @@ export default async function HubPage() {
     console.error("[Hub] memberships fetch failed:", memErr.message, memErr.details);
   }
 
-  // Fetch events + organizations + positions en parallèle (3 queries dédupées)
   const eventIds = Array.from(
     new Set((memberships ?? []).map((m: any) => m.event_id).filter(Boolean)),
   );
@@ -85,8 +69,6 @@ export default async function HubPage() {
   const orgsById = new Map((organizations ?? []).map((o: any) => [o.id, o]));
   const posById = new Map((positions ?? []).map((p: any) => [p.id, p]));
 
-  // Merge JS-side : mêmes shapes que l'embed PostgREST original pour ne pas
-  // casser la suite (m.event?.organization?.slug, m.position?.name, etc.).
   const enrichedMemberships = (memberships ?? []).map((m: any) => {
     const event = eventsById.get(m.event_id) as any;
     const organization = event ? orgsById.get(event.organization_id) : null;
@@ -101,50 +83,80 @@ export default async function HubPage() {
 
   const firstName = profile?.first_name ?? profile?.full_name?.split(" ")[0] ?? "bénévole";
 
+  /* ── État vide / erreur ─────────────────────────────── */
   if (!memberships || memberships.length === 0) {
     return (
       <main
-        className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-10"
+        className="mx-auto flex min-h-screen max-w-[430px] flex-col items-center justify-center px-6 py-10"
+        style={{ background: "#F8F4EC" }}
         data-testid={memErr ? "hub-error" : "hub-empty"}
       >
-        <p className="text-3xl">{memErr ? "⚠️" : "⏳"}</p>
-        <h1 className="mt-3 font-display text-2xl font-bold">Salut {firstName} 👋</h1>
-        <p className="mt-2 text-center text-brand-ink/70">
-          {memErr
-            ? "Une erreur technique nous empêche de charger tes affectations. L'équipe a été notifiée. Réessaie dans quelques minutes ou recontacte la régie si ça persiste."
-            : "Tu n'as pas encore d'affectation active. L'équipe revient vers toi dès que ton rôle est confirmé."}
-        </p>
-        <div className="mt-8 flex flex-col items-center gap-2">
-          <Link href="/account/privacy" className="text-sm text-brand-ink/60 underline">
-            Mes données et vie privée
-          </Link>
-          <form action="/auth/logout" method="post">
-            <button
-              type="submit"
-              aria-label="Se déconnecter d'Easyfest"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/60 underline transition hover:bg-brand-ink/5 hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-brand-coral"
+        <div
+          className="w-full rounded-3xl p-8 text-center"
+          style={{ background: "#FFFFFF", boxShadow: "0 2px 20px rgba(26,56,40,0.08)" }}
+        >
+          <p className="text-4xl mb-3">{memErr ? "⚠️" : "⏳"}</p>
+          <h1 className="font-display text-2xl font-bold" style={{ color: DARK }}>
+            Salut {firstName}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: MUTED }}>
+            {memErr
+              ? "Une erreur technique nous empêche de charger tes affectations. Réessaie dans quelques minutes."
+              : "Tu n'as pas encore d'affectation active. L'équipe revient vers toi dès que ton rôle est confirmé."}
+          </p>
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <Link
+              href="/account/privacy"
+              className="text-xs underline underline-offset-2"
+              style={{ color: MUTED }}
             >
-              Se déconnecter
-            </button>
-          </form>
+              Mes données et vie privée
+            </Link>
+            <form action="/auth/logout" method="post">
+              <button
+                type="submit"
+                className="text-xs underline underline-offset-2"
+                style={{ color: MUTED }}
+              >
+                Se déconnecter
+              </button>
+            </form>
+          </div>
         </div>
       </main>
     );
   }
 
+  /* ── Hub principal ──────────────────────────────────── */
   return (
-    <main className="mx-auto max-w-md px-6 py-8">
-      <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand-coral">
+    <main
+      className="mx-auto min-h-screen max-w-[430px]"
+      style={{ background: "#F8F4EC" }}
+    >
+      {/* Header */}
+      <div
+        className="px-5 pt-14 pb-6"
+        style={{ background: DARK }}
+      >
+        <p
+          className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
           Easyfest
         </p>
-        <h1 className="mt-1 font-display text-3xl font-bold">Salut {firstName} 👋</h1>
-        <p className="mt-2 text-sm text-brand-ink/70">
-          Choisis ton rôle pour entrer dans l'app.
+        <h1
+          className="font-display text-3xl font-bold leading-tight"
+          style={{ color: "#FFFFFF" }}
+        >
+          Salut {firstName}
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+          Choisis ton espace pour entrer.
         </p>
-      </header>
+      </div>
 
-      <ul className="space-y-3" data-testid="hub-role-list">
+      {/* Cartes rôles */}
+      <div className="px-4 py-5 space-y-3" data-testid="hub-role-list">
         {ROLE_CARDS_ORDER.flatMap((roleCode) => {
           const matches = enrichedMemberships.filter((m: any) => m.role === roleCode);
           return matches.map((m: any) => {
@@ -154,40 +166,78 @@ export default async function HubPage() {
             const subtitle = def.subtitleTemplate
               .replace("{firstName}", firstName)
               .replace("{positionName}", m.position?.name ?? "tous postes");
+            const icon = ROLE_ICON[roleCode] ?? { emoji: "🎟️", bg: "rgba(26,56,40,0.10)" };
 
             return (
-              <li key={`${roleCode}-${m.event?.id}`} data-role-card={roleCode}>
-                <Link
-                  href={`${def.routePrefix}/${orgSlug}/${eventSlug}`}
-                  className="group flex items-center gap-4 rounded-2xl border border-brand-ink/10 bg-white p-5 shadow-soft transition hover:border-brand-coral/40 hover:shadow-glow"
+              <Link
+                key={`${roleCode}-${m.event?.id}`}
+                href={`${def.routePrefix}/${orgSlug}/${eventSlug}`}
+                data-role-card={roleCode}
+                className="flex items-center gap-4 rounded-2xl bg-white p-5 transition hover:opacity-90 active:scale-[0.98]"
+                style={{
+                  border: `1px solid ${BORDER}`,
+                  boxShadow: "0 1px 6px rgba(26,56,40,0.07)",
+                }}
+              >
+                {/* Icône */}
+                <span
+                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-2xl"
+                  style={{ background: icon.bg }}
                 >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-coral/15 text-2xl">
-                    {EMOJI[roleCode]}
-                  </span>
-                  <div className="flex-1">
-                    <p className="font-display text-lg font-semibold leading-tight">{def.label}</p>
-                    <p className="text-xs text-brand-ink/60">
-                      {m.event?.organization?.name} · {m.event?.name}
-                    </p>
-                    <p className="text-xs text-brand-ink/50">{subtitle}</p>
-                  </div>
-                  <span aria-hidden className="text-brand-ink/30 group-hover:text-brand-coral">→</span>
-                </Link>
-              </li>
+                  {icon.emoji}
+                </span>
+
+                {/* Texte */}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-display text-base font-bold leading-tight"
+                    style={{ color: DARK }}
+                  >
+                    {def.label}
+                  </p>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: MUTED }}>
+                    {m.event?.organization?.name} · {m.event?.name}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#9A9080" }}>
+                    {subtitle}
+                  </p>
+                </div>
+
+                {/* Flèche */}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  className="h-5 w-5 flex-shrink-0"
+                  style={{ color: "#C49A2C" }}
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </Link>
             );
           });
         })}
-      </ul>
+      </div>
 
-      <div className="mt-8 flex flex-col items-center gap-2 text-center">
-        <Link href="/account/privacy" className="text-sm text-brand-ink/60 underline">
+      {/* Footer liens */}
+      <div className="px-5 pb-10 flex flex-col items-center gap-2 text-center">
+        <div
+          className="w-full h-px mb-2"
+          style={{ background: BORDER }}
+        />
+        <Link
+          href="/account/privacy"
+          className="text-xs underline underline-offset-2"
+          style={{ color: MUTED }}
+        >
           Mes données et vie privée
         </Link>
         <form action="/auth/logout" method="post">
           <button
             type="submit"
-            aria-label="Se déconnecter d'Easyfest"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-brand-ink/60 underline transition hover:bg-brand-ink/5 hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-brand-coral"
+            className="text-xs underline underline-offset-2"
+            style={{ color: MUTED }}
           >
             Se déconnecter
           </button>

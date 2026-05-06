@@ -4,6 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { createServerClient } from "@/lib/supabase/server";
 
+// ─── Rôles disponibles ────────────────────────────────────────────────────────
+export const MEMBER_ROLES = [
+  { value: "volunteer",       label: "Bénévole" },
+  { value: "volunteer_lead",  label: "Resp. bénévoles" },
+  { value: "post_lead",       label: "Resp. de poste" },
+  { value: "staff_scan",      label: "Staff scan" },
+  { value: "direction",       label: "Direction" },
+] as const;
+export type MemberRole = (typeof MEMBER_ROLES)[number]["value"];
+
 export async function validateApplication(applicationId: string) {
   const supabase = createServerClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -156,4 +166,117 @@ export async function inviteVolunteer(applicationId: string) {
 
   revalidatePath("/regie", "layout");
   return { ok: true, email: app.email };
+}
+
+// ─── Supprimer une candidature ────────────────────────────────────────────────
+export async function deleteApplication(applicationId: string) {
+  const supabase = createServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Non authentifié" };
+
+  // Récupérer l'event_id pour l'audit + vérifier les droits
+  const { data: app } = await supabase
+    .from("volunteer_applications")
+    .select("event_id, email")
+    .eq("id", applicationId)
+    .single();
+  if (!app) return { ok: false, error: "Candidature introuvable" };
+
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("event_id", app.event_id)
+    .eq("is_active", true);
+  const hasAccess = (memberships ?? []).some((m: any) =>
+    ["direction", "volunteer_lead"].includes(m.role),
+  );
+  if (!hasAccess) return { ok: false, error: "Permission refusée" };
+
+  const { error } = await supabase
+    .from("volunteer_applications")
+    .delete()
+    .eq("id", applicationId);
+  if (error) return { ok: false, error: error.message };
+
+  await supabase.from("audit_log").insert({
+    user_id: userData.user.id,
+    event_id: app.event_id,
+    action: "application.deleted",
+    payload: { application_id: applicationId, email: app.email },
+  });
+
+  revalidatePath("/regie", "layout");
+  return { ok: true };
+}
+
+// ─── Révoquer l'accès (désactiver membership) ──────────────────────────────
+export async function revokeAccess(userId: string, eventId: string) {
+  const supabase = createServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Non authentifié" };
+
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("event_id", eventId)
+    .eq("is_active", true);
+  const hasAccess = (memberships ?? []).some((m: any) =>
+    ["direction"].includes(m.role),
+  );
+  if (!hasAccess) return { ok: false, error: "Seule la direction peut révoquer un accès" };
+
+  const { error } = await supabase
+    .from("memberships")
+    .update({ is_active: false })
+    .eq("user_id", userId)
+    .eq("event_id", eventId);
+  if (error) return { ok: false, error: error.message };
+
+  await supabase.from("audit_log").insert({
+    user_id: userData.user.id,
+    event_id: eventId,
+    action: "membership.revoked",
+    payload: { target_user_id: userId },
+  });
+
+  revalidatePath("/regie", "layout");
+  return { ok: true };
+}
+
+// ─── Changer le rôle d'un membre ──────────────────────────────────────────────
+export async function changeMemberRole(userId: string, eventId: string, newRole: MemberRole) {
+  const supabase = createServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Non authentifié" };
+
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("event_id", eventId)
+    .eq("is_active", true);
+  const hasAccess = (memberships ?? []).some((m: any) =>
+    ["direction"].includes(m.role),
+  );
+  if (!hasAccess) return { ok: false, error: "Seule la direction peut modifier un rôle" };
+
+  const { error } = await supabase
+    .from("memberships")
+    .update({ role: newRole })
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .eq("is_active", true);
+  if (error) return { ok: false, error: error.message };
+
+  await supabase.from("audit_log").insert({
+    user_id: userData.user.id,
+    event_id: eventId,
+    action: "membership.role_changed",
+    payload: { target_user_id: userId, new_role: newRole },
+  });
+
+  revalidatePath("/regie", "layout");
+  return { ok: true };
 }

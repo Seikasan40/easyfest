@@ -7,7 +7,7 @@ interface PageProps {
 }
 
 export default async function ApplicationsPage({ params }: PageProps) {
-  const { eventSlug } = await params;
+  const { orgSlug, eventSlug } = await params;
   const supabase = createServerClient();
 
   const { data: ev } = await supabase
@@ -20,7 +20,7 @@ export default async function ApplicationsPage({ params }: PageProps) {
   const { data: applications } = await supabase
     .from("volunteer_applications")
     .select(`
-      id, status, full_name, first_name, last_name, email, phone, birth_date, is_minor,
+      id, event_id, status, full_name, first_name, last_name, email, phone, birth_date, is_minor,
       arrival_at, departure_at, preferred_position_slugs, skills, limitations,
       created_at, refusal_reason, source, admin_notes, invited_at
     `)
@@ -43,14 +43,19 @@ export default async function ApplicationsPage({ params }: PageProps) {
         .select("user_id, email")
         .in("user_id", activeUserIds)
     : { data: [] as any[] };
-  const accountEmails = new Set(
-    (profileRows ?? [])
-      .map((p: any) => (p.email ?? "").toLowerCase())
-      .filter(Boolean),
-  );
+
+  // Email → user_id map pour les actions de gestion de rôle / révocation
+  const emailToUserId = new Map<string, string>();
+  (profileRows ?? []).forEach((p: any) => {
+    if (p.email) emailToUserId.set(p.email.toLowerCase(), p.user_id);
+  });
+
+  const accountEmails = new Set(emailToUserId.keys());
+
   const enrichedApps = (applications ?? []).map((a: any) => ({
     ...a,
     has_account: accountEmails.has((a.email ?? "").toLowerCase()),
+    user_id: emailToUserId.get((a.email ?? "").toLowerCase()) ?? null,
   }));
 
   return (
@@ -62,7 +67,12 @@ export default async function ApplicationsPage({ params }: PageProps) {
         </p>
       </header>
 
-      <ApplicationsTable applications={enrichedApps} eventName={ev.name} />
+      <ApplicationsTable
+        applications={enrichedApps}
+        eventName={ev.name}
+        orgSlug={orgSlug}
+        eventSlug={eventSlug}
+      />
     </div>
   );
 }

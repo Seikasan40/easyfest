@@ -34,18 +34,24 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
 
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
-      {/* Coque proto : fond crème chaud, max 430px, centré */}
+      {/*
+        BottomNav rend deux variantes CSS :
+          • Desktop (≥ md)  → sticky top-0    : doit être AVANT <main>
+          • Mobile  (< md)  → fixed  bottom-0 : position fixe, DOM order indifférent
+        On le place en tête du flex pour que le sticky desktop fonctionne.
+      */}
       <div
-        className="mx-auto flex min-h-screen max-w-[430px] flex-col"
+        className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col md:max-w-2xl"
         style={{ background: "#F8F4EC" }}
       >
+        <BottomNav orgSlug={orgSlug} eventSlug={eventSlug} />
+
         <main
           className="flex-1 overflow-y-auto"
-          style={{ paddingBottom: "0" }}
+          style={{ paddingBottom: "max(5rem, env(safe-area-inset-bottom))" }}
         >
           {children}
         </main>
-        <BottomNav orgSlug={orgSlug} eventSlug={eventSlug} />
       </div>
     </TenantThemeProvider>
   );

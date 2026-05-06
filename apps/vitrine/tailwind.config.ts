@@ -50,9 +50,8 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "-apple-system", "sans-serif"],
         display: [
-          "var(--font-source-serif)",
-          "Source Serif 4",
-          "Source Serif Pro",
+          "var(--font-source-serif)", // CSS var pointe vers Playfair Display (chargé dans layout.tsx)
+          "Playfair Display",
           "Georgia",
           "serif",
         ],

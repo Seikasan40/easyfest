@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Source_Serif_4 } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 
 import { CookieBanner } from "@/components/cookie-banner";
 
@@ -12,12 +12,14 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-const sourceSerif = Source_Serif_4({
+// Police display : Playfair Display — serif haute-contraste éditoriale.
+// Utilisée pour tous les titres (font-display dans Tailwind).
+const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-source-serif",
-  weight: ["700", "900"],
-  style: ["normal"],
+  variable: "--font-source-serif", // conserve la même CSS var pour compat Tailwind
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -118,7 +120,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${sourceSerif.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${playfairDisplay.variable}`}>
       <head>
         <script
           type="application/ld+json"

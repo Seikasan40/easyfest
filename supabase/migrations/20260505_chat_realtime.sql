@@ -1,0 +1,5 @@
+-- MIGRATION OBSOLÈTE — NE PAS EXÉCUTER
+-- Ce fichier est dans le mauvais répertoire (easyfest/supabase/ au lieu de easyfest/packages/db/supabase/).
+-- La migration correcte est :
+--   easyfest/packages/db/supabase/migrations/20260505000001_chat_message_reads_realtime.sql
+-- Ce fichier ne contient aucune instruction SQL active.

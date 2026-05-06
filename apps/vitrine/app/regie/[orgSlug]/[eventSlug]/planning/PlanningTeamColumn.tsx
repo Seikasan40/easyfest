@@ -2,13 +2,10 @@
 
 import { useDroppable } from "@dnd-kit/core";
 
-import { PlanningVolunteerCard, type PlanningVolunteer } from "./PlanningVolunteerCard";
+import { PlanningVolunteerChip } from "./PlanningVolunteerChip";
+import type { PlanningVolunteer } from "./PlanningVolunteerCard";
 
 export const POOL_ID = "__pool__";
-
-const DARK = "#1A3828";
-const BORDER = "#E5DDD0";
-const MUTED = "#7A7060";
 
 interface TeamProps {
   team: {
@@ -20,74 +17,99 @@ interface TeamProps {
     description: string | null;
     needs_count_default: number;
     members: PlanningVolunteer[];
+    /** Heure de début du 1er créneau (optionnel) */
+    shift_time?: string | null;
   };
+  /** Index pour l'alternance visuelle */
+  index?: number;
 }
 
-export function PlanningTeamColumn({ team }: TeamProps) {
+function formatTime(iso?: string | null): string {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  const h = d.getHours().toString().padStart(2, "0");
+  const m = d.getMinutes().toString().padStart(2, "0");
+  return m === "00" ? `${h}:00` : `${h}:${m}`;
+}
+
+export function PlanningTeamColumn({ team, index = 0 }: TeamProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `t-${team.id}` });
   const filled = team.members.length;
   const need = team.needs_count_default;
-  const status = filled >= need ? "complete" : filled > 0 ? "partial" : "empty";
+  const isComplete = filled >= need;
+  const isEmpty = filled === 0;
 
-  const badgeStyle =
-    status === "complete"
-      ? { background: "rgba(16,185,129,0.12)", color: "#10B981" }
-      : status === "partial"
-      ? { background: "rgba(196,154,44,0.12)", color: "#C49A2C" }
-      : { background: "rgba(26,56,40,0.06)", color: MUTED };
+  // Badge capacité
+  const badgeBg = isComplete
+    ? "rgba(255,255,255,0.10)"
+    : isEmpty
+    ? "rgba(239,68,68,0.20)"
+    : "rgba(196,154,44,0.25)";
+  const badgeColor = isComplete ? "rgba(255,255,255,0.55)" : isEmpty ? "#F87171" : "#F0BE4A";
+
+  const rowBg = isOver
+    ? "rgba(255,255,255,0.07)"
+    : index % 2 === 0
+    ? "transparent"
+    : "rgba(255,255,255,0.025)";
 
   return (
     <section
       ref={setNodeRef}
       id={`team-${team.slug}`}
-      className="flex min-h-[140px] flex-col rounded-2xl p-3 transition"
+      className="transition-colors"
       style={{
-        background: "#FFFFFF",
-        border: isOver ? `1.5px solid ${team.color}` : `1px solid ${BORDER}`,
-        borderLeft: `4px solid ${team.color}`,
-        boxShadow: isOver
-          ? `0 0 0 3px ${team.color}18, 0 2px 8px rgba(26,56,40,0.10)`
-          : "0 1px 4px rgba(26,56,40,0.06)",
+        background: rowBg,
+        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: isOver ? "inset 0 0 0 1.5px rgba(196,154,44,0.40)" : "none",
+        borderRadius: isOver ? "8px" : "0",
       }}
     >
-      <header className="mb-2 flex items-center justify-between gap-2">
-        <h3
-          className="font-display text-sm font-semibold leading-tight truncate"
-          style={{ color: DARK }}
-        >
-          {team.icon ? <span className="mr-1">{team.icon}</span> : null}
-          {team.name}
-        </h3>
+      {/* ── Header de la rangée ──────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Heure */}
         <span
-          className="flex-none rounded-full px-2 py-0.5 text-[10px] font-bold"
-          style={badgeStyle}
+          className="w-11 flex-shrink-0 text-sm font-mono leading-none"
+          style={{ color: "rgba(255,255,255,0.35)" }}
         >
-          {filled} / {need}
+          {team.shift_time ? formatTime(team.shift_time) : ""}
         </span>
-      </header>
-      {team.description && (
-        <p className="mb-2 text-[11px] line-clamp-2" style={{ color: MUTED }}>
-          {team.description}
-        </p>
-      )}
-      <div className="space-y-1.5 flex-1">
+
+        {/* Nom du poste */}
+        <span className="flex-1 text-sm font-semibold leading-snug" style={{ color: "#FFFFFF" }}>
+          {team.icon ? <span className="mr-1.5">{team.icon}</span> : null}
+          {team.name}
+        </span>
+
+        {/* Badge capacité */}
+        <span
+          className="flex-none rounded-full px-2.5 py-0.5 text-xs font-bold leading-none"
+          style={{ background: badgeBg, color: badgeColor }}
+        >
+          {filled}/{need}
+        </span>
+      </div>
+
+      {/* ── Chips bénévoles ────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2 px-4 pb-3">
         {team.members.length === 0 ? (
-          <div
-            className="rounded-xl px-2 py-4 text-center"
-            style={{ border: `1px dashed ${BORDER}` }}
+          <span
+            className="rounded-full px-3 py-1 text-[11px]"
+            style={{
+              color: "rgba(255,255,255,0.25)",
+              border: "1px dashed rgba(255,255,255,0.12)",
+            }}
           >
-            <p className="text-[11px]" style={{ color: MUTED }}>
-              Glisse un bénévole ici
-            </p>
-          </div>
+            Dépose un bénévole ici
+          </span>
         ) : (
           team.members.map((v) => (
-            <PlanningVolunteerCard
+            <PlanningVolunteerChip
               key={v.user_id}
               v={v}
               currentTeamId={team.id}
               currentTeamSlug={team.slug}
-              teamColor={team.color}
+              dark={true}
             />
           ))
         )}
@@ -96,6 +118,8 @@ export function PlanningTeamColumn({ team }: TeamProps) {
   );
 }
 
+// ─── Pool (bénévoles sans équipe) ──────────────────────────────────────────
+
 interface PoolProps {
   pool: PlanningVolunteer[];
   totalPool: number;
@@ -103,39 +127,52 @@ interface PoolProps {
 
 export function PlanningPool({ pool, totalPool }: PoolProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `t-${POOL_ID}` });
+
   return (
     <section
       ref={setNodeRef}
-      className="rounded-2xl p-4 transition"
+      className="rounded-2xl transition-colors"
       style={{
-        background: isOver ? "rgba(196,154,44,0.06)" : "#F8F4EC",
-        border: isOver ? `1.5px dashed #C49A2C` : `1.5px dashed ${BORDER}`,
+        background: isOver
+          ? "rgba(196,154,44,0.06)"
+          : "rgba(255,255,255,0.04)",
+        border: isOver
+          ? "1.5px dashed rgba(196,154,44,0.50)"
+          : "1px dashed rgba(255,255,255,0.15)",
+        padding: "16px",
       }}
     >
-      <header className="mb-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-            style={{ background: "rgba(26,56,40,0.08)", color: DARK }}
-          >
-            {totalPool}
-          </span>
-          <h3 className="text-xs font-bold uppercase tracking-[0.13em]" style={{ color: MUTED }}>
-            POOL — Bénévoles à placer
-          </h3>
-        </div>
-        <span className="text-[10px]" style={{ color: MUTED }}>
-          Appui long → drag · ou tap pour menu
+      <header className="mb-3 flex items-center gap-2">
+        <span
+          className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+          style={{
+            background: totalPool > 0 ? "rgba(239,68,68,0.20)" : "rgba(16,185,129,0.15)",
+            color: totalPool > 0 ? "#F87171" : "#34D399",
+          }}
+        >
+          {totalPool}
         </span>
+        <h3
+          className="text-[11px] font-bold uppercase tracking-[0.15em]"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+        >
+          Sans équipe
+        </h3>
       </header>
+
       {pool.length === 0 ? (
-        <p className="py-3 text-center text-xs" style={{ color: "#10B981" }}>
-          ✅ Tous les bénévoles ont une équipe
+        <p className="py-2 text-center text-xs" style={{ color: "#34D399" }}>
+          ✅ Tous les bénévoles sont placés
         </p>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="flex flex-wrap gap-2">
           {pool.map((v) => (
-            <PlanningVolunteerCard key={v.user_id} v={v} currentTeamId={null} />
+            <PlanningVolunteerChip
+              key={v.user_id}
+              v={v}
+              currentTeamId={null}
+              dark={true}
+            />
           ))}
         </div>
       )}

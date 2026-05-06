@@ -39,14 +39,15 @@ export default async function StaffLayout({ children, params }: Props) {
 
   return (
     <div
-      className="mx-auto flex min-h-screen max-w-[430px] flex-col"
+      className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col md:max-w-3xl"
       style={{ background: "#0D1F14" }}
     >
       {/* Header */}
       <div
-        className="px-5 pt-14 pb-4 flex-shrink-0"
+        className="flex-shrink-0 px-5 pb-4"
         style={{
           borderBottom: "1px solid rgba(255,255,255,0.08)",
+          paddingTop: "max(1rem, env(safe-area-inset-top))",
         }}
       >
         <p

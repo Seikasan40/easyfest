@@ -1,3 +1,380 @@
+# 🟢 BUG #18 FIXED + AUDIT FINAL VALIDÉ — 3 mai 2026 ~18h21 UTC
+
+> Tag : `audit-mobile-first-validated-bug18-fixed-20260503-1821`
+> Commits : `b08f691` (fix RLS recursion) + `6f212bb` (3 breadcrumbs back-links 44px)
+
+## ✅ Root cause identifiée par Claude Code via diagnostic curl direct
+
+**Erreur réelle** : `42P17 infinite recursion detected in policy for relation "memberships"`
+**Pas un bug d'embed PostgREST** comme initialement suspecté.
+
+La policy `memberships_select_my_team_lead` ajoutée dans la migration `20260503020000` (Phase 4 V5 sprint Bug #7-bis) contenait un sub-query `select 1 from public.memberships m_self` à l'intérieur d'une policy SELECT sur memberships. Postgres détecte la récursion infinie de RLS et rejette TOUTE query SELECT sur memberships pour un utilisateur authentifié. Conséquence en cascade : tout `/hub`, /regie/.../planning, /poste, /v home cassés.
+
+## ✅ Fix migration `20260503040000_fix_memberships_rls_recursion.sql`
+
+3 fonctions `security definer` qui bypass RLS lors des sub-queries internes :
+- `is_volunteer_in_team(event_id, position_id)` — vérifie via memberships ou assignments
+- `is_post_lead_of(event_id, position_id)`
+- `is_target_in_my_post_lead_team(target_user_id)`
+
+Recréation des 3 policies `memberships_select_my_team_lead`, `vp_select_my_team_lead`, `vp_select_post_lead_team` en utilisant les fonctions. Plus de récursion possible.
+
+## ✅ Fix défense-en-profondeur `hub/page.tsx`
+
+- Suppression de l'embed PostgREST imbriqué `event:event_id (... organization:organization_id (...))`
+- Split en 4 queries séparées + merge JS-side via Map (pattern réutilisable)
+- `error` destructuré + log côté serveur + état d'erreur user-visible (`data-testid="hub-error"`, ⚠️) au lieu de tomber silencieusement sur "Salut bénévole"
+- `data-testid="hub-empty"` distinct pour le vrai cas vide légitime
+- `data-role-card={role}` sur chaque carte pour Playwright
+
+## ✅ Test Playwright sémantique `hub-semantic.spec.ts`
+
+Login Pamela + assertions :
+1. `[data-testid="hub-error"]` count == 0
+2. `[data-testid="hub-empty"]` count == 0
+3. `[data-role-card]` count > 0
+4. `[data-role-card="direction"] a[href^="/regie/"]` visible
+
+Couvre la régression Bug #18 : un test contenu sémantique en complément des tests visuels (no h-scroll + tap targets). Si une nouvelle RLS pathologique réapparaît, ce test fail au lieu de passer vert silencieusement.
+
+## ✅ Bonus — 3 breadcrumbs back-links agrandis
+
+Re-run Playwright post-fix a détecté 3 liens "← Accueil/Retour/{orgName}" 68×17px sur :
+- `apps/vitrine/app/[orgSlug]/page.tsx`
+- `apps/vitrine/app/[orgSlug]/[eventSlug]/page.tsx`
+- `apps/vitrine/app/[orgSlug]/[eventSlug]/inscription/page.tsx`
+
+Fix : `inline-flex min-h-[44px] items-center` sur les 3 Links.
+
+## ✅ Validation finale prod live (Cowork Phase 4 V7)
+
+### Playwright automatisé (Claude Code)
+```
+113/113 tests OK (45.6s)
+- 112 mobile-visual (4 viewports × 14 pages × 2 checks)
+- 1   hub-semantic (Pamela login + role cards)
+```
+
+### Cowork desktop (Cowork moi-même, en live, 18h28 UTC)
+- Login Pamela `pam@easyfest.test` / `easyfest-demo-2026` → /hub charge
+- H1 : "Salut Pam 👋" (pas "Salut bénévole") ✅
+- 1 role card "Je suis régie · ZIK en PACA · Roots du Lac 2026" ✅
+- `roleCards=1, hubError=0, hubEmpty=0, hasNoAffectationText=false` ✅
+- Pas de redirect /hub depuis /regie (Pamela a accès) ✅
+
+### BDD cohérente (Management API)
+- 13 memberships actives totales
+- Pamela 1, Lucas 1, Sandy 3, Mahaut 1, Antoine 1, Dorothée 1
+- Query SELECT memberships ne retourne plus 42P17 ✅
+- 3 fonctions `security definer` déployées correctement ✅
+
+## 📚 Leçons retenues pour le futur
+
+1. **Tests visuels (no h-scroll, tap targets) sont nécessaires mais pas suffisants** : ils peuvent passer vert sur une page complètement cassée sémantiquement. Toujours doubler avec un test de contenu authentifié (Playwright `[data-role-card]` count > 0 par exemple).
+2. **Sub-query RLS sur même table = piège récursion infinie**. Toujours utiliser `security definer` function intermédiaire pour bypass RLS lors des SELECT internes.
+3. **Defense in depth dans le code** : split queries + error destructuré + état d'erreur user-visible empêchent le silent failure et accélèrent le debug.
+4. **Diagnostic curl direct sur PostgREST** est le test ultime : si une query simple `?select=role,event_id` retourne 42P17, ça révèle un problème RLS profond invisible côté frontend.
+
+## 🎯 Production J-26 RDL2026 (28-30 mai 2026)
+
+Cycle d'audit clos avec **13 commits** et **24+ bugs documentés** (sans compter les 80+ anomalies mobile-first). Tag final : `audit-mobile-first-validated-bug18-fixed-20260503-1821`.
+
+Recommandations user pré-festival :
+1. **Test sur ton vrai téléphone** Pamela (le seul reproducteur fiable des comportements iOS/Android natifs)
+2. **Brief Pamela** : `pam@easyfest.test` / `easyfest-demo-2026` en démo, son vrai compte en prod
+3. **Smoke test 24h avant le festival** : refaire login Pamela + DnD planning tablet + alerte grave + broadcast pour vérifier qu'aucun deploy intermédiaire n'a régressé
+4. **CI GitHub Actions Playwright** sur chaque PR pour ne plus avoir de régression silencieuse
+
+---
+
+# 🚨 BUG #18 BLOQUANT — /hub vide pour TOUS les comptes (régression critique)
+
+> Découvert par user en test mobile + reproduit par Cowork desktop le 3 mai 2026 ~17h45 UTC.
+> **Tag `audit-mobile-first-validated-final-20260503-1738` est invalide** — un test Playwright "no horizontal scroll + tap targets ≥ 44px" passe vert mais ne teste PAS le contenu sémantique. L'app est essentiellement cassée pour tous les rôles.
+
+## Symptôme reproduit
+
+- User mobile (iPhone 4G) sur `easyfest.app/hub` : "Salut bénévole 👋 / Tu n'as pas encore d'affectation active. L'équipe revient vers toi dès que ton rôle est confirmé." + liens "Mes données et vie privée" + "Se déconnecter"
+- Cowork desktop (Chrome easy_fest) : login Pamela `pam@easyfest.test` / `easyfest-demo-2026` → redirect /hub → MÊME ÉCRAN VIDE
+- User testify : « ça renvoi à ça même pour les comptes test régie admin etc »
+
+## État BDD (confirmé via Management API)
+
+- Pamela : 1 membership `direction RDL2026 ZIK en PACA` `is_active=true` ✅
+- 6 comptes seed `*@easyfest.test` ont leurs memberships actives ✅
+- FK `events.organization_id → organizations` existe ✅
+- RLS `memberships_select_self` simple : `user_id = auth.uid()` ✅
+
+## Root cause probable
+
+`apps/vitrine/app/hub/page.tsx` lignes 30-40 utilise embed PostgREST imbriqué :
+
+```typescript
+const { data: memberships } = await supabase
+  .from("memberships")
+  .select(`
+    role, position_id, is_entry_scanner, is_mediator, is_active,
+    event:event_id (
+      id, name, slug,
+      organization:organization_id (slug, name)   // ← double imbrication
+    ),
+    position:position_id (name)
+  `)
+  .eq("user_id", userData.user.id)
+  .eq("is_active", true);
+```
+
+C'est **exactement le même pattern** que les Bugs #6, #8, #9, #13 qui ont été fixés sur d'autres pages, mais le hub a été oublié. L'embed double `event:event_id (... organization:organization_id (...))` échoue silencieusement (PGRST200 ou autre erreur cachée car pas de `error` destructuré) → `memberships = null` ou `[]` → branche "Salut bénévole" affichée.
+
+## Fix obligatoire
+
+Split en 4 queries séparées + merge JS-side :
+
+```typescript
+// 1. Memberships seuls (aucun embed)
+const { data: memberships, error: memErr } = await supabase
+  .from("memberships")
+  .select("role, position_id, event_id, is_entry_scanner, is_mediator, is_active")
+  .eq("user_id", userData.user.id)
+  .eq("is_active", true);
+
+if (memErr) {
+  console.error("[Hub] memberships fetch failed:", memErr);
+  // Ne pas montrer "Salut bénévole" — montrer une vraie erreur user
+}
+
+// 2. Events séparés
+const eventIds = Array.from(new Set((memberships ?? []).map(m => m.event_id)));
+const { data: events } = eventIds.length > 0
+  ? await supabase.from("events").select("id, name, slug, organization_id").in("id", eventIds)
+  : { data: [] };
+
+// 3. Organizations séparées
+const orgIds = Array.from(new Set((events ?? []).map(e => e.organization_id)));
+const { data: orgs } = orgIds.length > 0
+  ? await supabase.from("organizations").select("id, slug, name").in("id", orgIds)
+  : { data: [] };
+
+// 4. Positions séparées
+const posIds = Array.from(new Set((memberships ?? []).map(m => m.position_id).filter(Boolean)));
+const { data: positions } = posIds.length > 0
+  ? await supabase.from("positions").select("id, name").in("id", posIds)
+  : { data: [] };
+
+// Merge via Map
+const eventsById = new Map((events ?? []).map(e => [e.id, e]));
+const orgsById = new Map((orgs ?? []).map(o => [o.id, o]));
+const posById = new Map((positions ?? []).map(p => [p.id, p]));
+
+const enrichedMemberships = (memberships ?? []).map(m => {
+  const event = eventsById.get(m.event_id);
+  const organization = event ? orgsById.get(event.organization_id) : null;
+  return {
+    ...m,
+    event: event ? { id: event.id, name: event.name, slug: event.slug, organization } : null,
+    position: m.position_id ? posById.get(m.position_id) : null,
+  };
+});
+```
+
+## Correction Playwright pour ne plus avoir de faux positif
+
+Le test Playwright `mobile-visual.spec.ts` a passé vert sur /hub alors que le contenu était cassé. Il faut ajouter un test **contenu sémantique** :
+
+```typescript
+test('hub displays role cards for authenticated user', async ({ page }) => {
+  // Login Pamela
+  await page.goto('https://easyfest.app/auth/login');
+  await page.fill('input[type=email]', 'pam@easyfest.test');
+  await page.fill('input[type=password]', 'easyfest-demo-2026');
+  await page.press('input[type=password]', 'Enter');
+  await page.waitForURL('**/hub');
+  
+  // Vérifier qu'au moins 1 carte de rôle est affichée
+  const roleCards = await page.locator('[data-role-card]').count();
+  expect(roleCards).toBeGreaterThan(0);
+  
+  // Vérifier que le message "Pas encore d'affectation" n'est PAS affiché
+  const noAffectation = await page.locator('text=Tu n\'as pas encore d\'affectation').count();
+  expect(noAffectation).toBe(0);
+});
+```
+
+## Conséquence pour l'audit J-26
+
+- **Tag `audit-mobile-first-validated-final-20260503-1738` est INVALIDE**
+- L'app est dans un état où **AUCUN utilisateur authentifié ne peut accéder à son rôle**
+- C'est probablement le bug le plus critique de toute la série — bloque 100% des utilisateurs au bout du tunnel d'authentification
+- À fixer **immédiatement** par Claude Code avant tout autre travail
+
+## Action immédiate
+
+Lance Claude Code avec ce focus laser :
+> Fix Bug #18 hub vide : split la query embed PostgREST de `apps/vitrine/app/hub/page.tsx` en 4 queries séparées (memberships + events + organizations + positions). Test Vitest. Test Playwright contenu sémantique (pas juste no horizontal scroll). Push, redeploy, vérifier sur prod que Pamela voit sa carte direction.
+
+---
+
+# 🟢 AUDIT MOBILE-FIRST FINAL VALIDÉ — 3 mai 2026 ~17h38 UTC
+
+> Tag : `audit-mobile-first-validated-final-20260503-1738`
+> Commit : `cd8147e` sur main
+> Verdict objectif via tests automatisés Playwright + Lighthouse (pas via screenshots desktop Cowork qui ne pouvaient pas émuler mobile).
+
+## ✅ Résultats automatisés
+
+### Playwright mobile-visual : 112/112 tests passés
+
+- **4 viewports** : 360×640 (Galaxy S5) / 390×844 (iPhone 14) / 412×915 (Pixel 7) / 768×1024 (iPad portrait Pamela)
+- **14 pages** : `/`, `/pricing`, `/legal/cgu`, `/legal/mentions`, `/legal/privacy`, `/auth/login`, `/icmpaca`, `/icmpaca/rdl-2026`, `/icmpaca/rdl-2026/inscription`, `/demande-festival`, `/hub`, `/v/icmpaca/rdl-2026`, `/regie/icmpaca/rdl-2026`, `/poste/icmpaca/rdl-2026`
+- **2 checks par page** : no horizontal scroll + tap targets ≥ 44×44px (heuristique WCAG 2.5.5 clause "Inline" pour exempter les liens en milieu de phrase)
+- **Run time** : 45s sur prod live easyfest.app
+
+### Lighthouse mobile (4G + 4× CPU throttle)
+
+| Page | Performance | A11y | Best Practices | SEO | LCP | CLS | TBT |
+|---|---|---|---|---|---|---|---|
+| `/v/icmpaca/rdl-2026` | **96**/100 | 96 | 100 | 63* | 2.3s | 0 | 50ms |
+| `/` homepage | **94**/100 | 94 | 100 | 100 | 2.3s | 0 | 210ms |
+
+*SEO 63 sur `/v/` = noindex attendu (espace volunteer privé)
+
+**Core Web Vitals** : tous "Good" ✅
+- LCP < 2.5s ✅
+- CLS < 0.1 ✅
+- TBT < 300ms ✅
+
+## ✅ Fixes Sprint final V6 (par-dessus les 84 du Sprint V5)
+
+1. `apps/vitrine/components/site-header.tsx:23` — Logo `Easyfest, accueil` h=36 → `min-h-[44px]`
+2. `site-header.tsx:27-37` — nav header (Festivals, Confidentialité) → `min-h-[44px] py-3 inline-flex`
+3. `site-header.tsx:93-129` — 4 footer links → `min-h-[44px] py-3 inline-flex` ; items légaux non-cliquables → `py-1`
+4. Playwright config + spec dédié mobile : `apps/vitrine/playwright.mobile.config.ts` + `apps/vitrine/e2e/mobile-visual.spec.ts`
+5. Heuristique tap-targets respectant WCAG 2.5.5 clause "Inline" (exempte les liens dans bloc de texte)
+
+## 📦 Récap complet du cycle d'audit J-26 RDL2026
+
+| Phase | Livrable |
+|---|---|
+| Audit initial 10/10 | `02fea9c` |
+| 7 multi-membership bugs | `1a6b6bc` |
+| Audit extrême 4 bugs (#1-#4) | `5c231ae`, `b46f2ec` |
+| Bug #5 RPC atomique | `e5e0a3e` |
+| Universal fix DnD pre-volunteer | `49f3234` |
+| Bug #6 frontend planning découplé | `04b791e` |
+| 21 bugs PostgREST embeds | `4623ec0` |
+| Bugs #16 mobile DnD + #7-bis + #13-bis + feed admin | `a605877` |
+| **Audit mobile-first 84 anomalies** | **`4e13b54`** |
+| **Sprint final V6 — 5 résiduelles + Playwright + Lighthouse** | **`cd8147e`** |
+
+**Tag final** : `audit-mobile-first-validated-final-20260503-1738`
+
+## 🎯 Ce qui reste pour la production J-26 (28-30 mai 2026)
+
+### Recommandations user post-audit
+
+1. **Test sur ton vrai téléphone** (le seul qui peut détecter ce que les tests automatisés ratent : multi-touch gestures, comportements iOS/Android natifs spécifiques, IME français AZERTY mobile, signal 4G réel hors WiFi)
+2. **Test sur la tablette de Pamela** pour le jour J (DnD planning, taille tap targets en condition lumière soleil)
+3. **Lancer Playwright en CI GitHub Actions** sur chaque PR pour ne pas régresser
+4. **Brief Pamela** : utiliser `pam@easyfest.test` / `easyfest-demo-2026` en démo, et son vrai compte production en prod
+5. **Smoke test J-26** : 24h avant le festival, refaire un Cowork retest des 11 scénarios prioritaires en mobile/tablette pour s'assurer que le deploy n'a rien régressé
+
+### Bugs résiduels mineurs (non-bloquants J-26, à intégrer post-festival)
+
+- Note : Lucas /v/feed visibility des broadcasts admin "Annonces" — partial fix dans commit `a605877`, à re-vérifier en prod
+- SEO 63 sur `/v/` — par design (noindex pages auth)
+- Mobile app Expo non auditée — hors scope J-26
+
+---
+
+# 🟠 RETEST PHASE 4 V4 — 3 mai 2026 ~16h30 UTC (Cowork) — 8/11 GREEN, 3 BUGS RÉSIDUELS + BUG MOBILE CRITIQUE
+
+> Phase 4 V4 retest exhaustif après commit `4623ec0` (Claude Code, 21 bugs PostgREST fixés). Tests réels page-par-page avec cross-check BDD live.
+
+## ✅ 8 pages validées desktop OK
+
+| URL | Statut | Cross-check BDD |
+|---|---|---|
+| `/auth/login` Pamela password seed | ✅ | `easyfest-demo-2026` confirmé fonctionne |
+| `/hub` Pamela | ✅ | 1 carte régie RDL2026 |
+| `/regie/.../prefecture` | ✅ Bug #7 FIXED | 85 validés ✓ + 4 partenaires 9000€ + 3 mineurs |
+| `/regie/.../messages` historique | ✅ Bug #8 FIXED | 3 broadcasts visibles avec auteurs enrichis |
+| `/regie/.../safer` | ✅ Bug #9 FIXED | 3 alertes visibles avec reporters enrichis |
+| `/regie/.../settings/theme` | ✅ Bug #10 + #14 FIXED | switch dynamique sans F5 + couleurs CSS variables |
+| `/regie/.../applications` | ✅ Bug #11 FIXED | 87 cands, 85 validées, flags has_account corrects |
+| `/regie/.../planning` | ✅ Bug #15 FIXED | 86 bénévoles, fallback noms OK |
+| `/v/.../feed` Lucas | ✅ Bug #4 FIXED | 1 broadcast Bar visible avec auteur enrichi |
+
+## 🟠 3 bugs résiduels desktop
+
+### Bug résiduel #7-bis — `/v/...` ne trouve pas le team lead Mahaut
+- Lucas voit « Pas encore de chef·fe d'équipe désigné·e » alors que **Mahaut a `memberships.role='post_lead', position_id=Bar, is_active=true`** en BDD ✅
+- **Fichier** : `apps/vitrine/app/v/[orgSlug]/[eventSlug]/page.tsx`
+- **Fix** : auditer la query post_lead, vérifier le merge JS-side du profile
+
+### Bug résiduel #13-bis — Mahaut /poste affiche `?` au lieu des noms
+- 3 user_ids correctement détectés via UNION (Lucas + Anaïs + Sandy)
+- Cartes affichent `?` car **RLS `vp_select_post_lead_team`** bloque les profiles dont la membership.position_id ≠ post_lead.position_id
+- Anaïs (membership.position_id=NULL, assignment Bar) et Sandy (membership.position_id=Ateliers, assignment Bar) → bloqués
+- Seul Lucas (membership.position_id=Bar) devrait apparaître
+- **Fix** : étendre la RLS pour autoriser aussi via assignments :
+  ```sql
+  -- nouveau OR EXISTS dans vp_select_post_lead_team
+  or exists (
+    select 1 from assignments a
+    join shifts s on s.id = a.shift_id
+    join memberships m_actor on m_actor.user_id = auth.uid()
+    where a.volunteer_user_id = volunteer_profiles.user_id
+      and m_actor.role = 'post_lead'
+      and m_actor.position_id = s.position_id
+      and m_actor.is_active = true
+  )
+  ```
+- **Alternative plus propre** : la RPC `assign_volunteer_atomic` doit aussi mettre à jour `memberships.position_id` (en plus de créer l'assignment), pour synchroniser les 2 sources
+
+## 🔴 BUG CRITIQUE #16 — DnD planning mobile inopérant (user-reported)
+
+- **Test** : User tente DnD planning sur **téléphone** → ne fonctionne pas
+- **Sévérité** : 🔴 BLOQUANT (slogan « mobile-first », Pamela utilisera tablette le jour J)
+- **URL** : `/regie/icmpaca/rdl-2026/planning` en mobile
+- **Symptômes observés par user** :
+  1. Impossible de drag-drop (le touch déclenche probablement le scroll vertical au lieu du drag)
+  2. Le pool affiche **« Tous les bénévoles ont une équipe 🎉 »** (faux) — le compteur mobile est désynchronisé
+  3. OU l'app affiche **« Tu dois inviter d'abord ce bénévole »** alors que les bénévoles SONT déjà invités/connectés
+- **Root cause hypothèses** :
+  1. dnd-kit n'a pas `TouchSensor` configuré avec `delay` (250ms recommandé pour distinguer scroll vs long-press)
+  2. Le menu d'équipes alternatif au tap court (mobile) ne se déclenche pas — possiblement le composant `PlanningVolunteerCard` n'a pas de fallback `onTap` mobile
+  3. Le pool calculé en SSR n'est pas re-calculé après l'assignation côté mobile (cache différent ?)
+- **Fix dnd-kit pour mobile** :
+  ```typescript
+  import { useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, { 
+      activationConstraint: { distance: 8 }  // 8px de mouvement avant drag (évite scroll accidentel)
+    }),
+    useSensor(TouchSensor, { 
+      activationConstraint: { delay: 250, tolerance: 5 }  // long-press 250ms, tolérance 5px
+    }),
+    useSensor(KeyboardSensor),
+  );
+  
+  <DndContext sensors={sensors} ...>
+  ```
+- **Fix menu mobile alternatif** : sur mobile (< 768px), au tap court sur une carte, ouvrir un bottom-sheet listant les équipes cliquables. C'est plus fiable que le drag pour mobile.
+- **Critère validation** :
+  1. Mobile 412×915 simulé OU device réel : long-press 250ms sur carte bénévole → drag possible
+  2. Tap court → bottom-sheet "Choisir une équipe" → click équipe → toast Sauvegardé
+  3. Compteur mobile cohérent avec desktop après assignation
+
+## 🟡 Note observation — Lucas /v/feed ne voit que 1 broadcast Bar
+
+- **État BDD** : 3 broadcasts (admin · Annonces "Salut à tous", team · Bar "Briefing", team · Parking "Yo yo")
+- **UI Lucas** : 1 broadcast Bar uniquement
+- **Attendu** : Lucas devrait voir AU MOINS 2 broadcasts (Bar + Annonces qui devrait toucher tout le monde)
+- **À investiguer** : ciblage par `kind=admin` filtré côté frontend ou RLS messages mal configurée
+
+---
+
 # 🔴 RETEST EXTRÊME — 3 mai 2026 (Cowork) — STOP PHASE 1 déclenché
 
 > Audit conduit dans browser `easy_fest`, login Pamela (`pam@easyfest.test` / `easyfest-demo-2026-v2`).

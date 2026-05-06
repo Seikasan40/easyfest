@@ -18,7 +18,6 @@ import { assignVolunteerToTeam } from "@/app/actions/planning";
 import { AssignProvider, type AssignVolunteerSummary } from "@/components/AssignContext";
 import { VolunteerAssignMenu } from "@/components/VolunteerAssignMenu";
 
-import { PlanningChipsBar } from "./PlanningChipsBar";
 import {
   POOL_ID,
   PlanningPool,
@@ -245,21 +244,6 @@ export function PlanningTeamsBoard({
     [assignOptimistic, handleInviteRequest, openMenu, teams],
   );
 
-  // Construit la liste compacte pour le PlanningChipsBar mobile.
-  const chipsTeams = useMemo(
-    () =>
-      filteredTeams.map((t) => ({
-        id: t.id,
-        slug: t.slug,
-        name: t.name,
-        color: t.color,
-        icon: t.icon,
-        membersCount: t.members.length,
-        needs: t.needs_count_default ?? 0,
-      })),
-    [filteredTeams],
-  );
-
   return (
     <AssignProvider value={assignContextValue}>
       <div className="space-y-4">
@@ -316,16 +300,45 @@ export function PlanningTeamsBoard({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          {/* Sticky chips bar mobile-only — drop targets équipes en haut, pool drag-up vers ici */}
-          <PlanningChipsBar teams={chipsTeams} highlightId={highlightTeamSlug ?? null} />
+          {/* Layout global : desktop → sidebar pool + liste postes | mobile → stack vertical */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-start">
 
-          <PlanningPool pool={filteredPool} totalPool={pool.length} />
+            {/* ── POOL (bénévoles sans équipe) ────────────────────────────── */}
+            <div className="md:w-64 md:flex-shrink-0">
+              <PlanningPool pool={filteredPool} totalPool={pool.length} />
+            </div>
 
-          {/* Grid colonnes équipes : visible desktop uniquement (md+), masqué mobile (chips suffisent) */}
-          <div className="hidden gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTeams.map((team) => (
-              <PlanningTeamColumn key={team.id} team={team} />
-            ))}
+            {/* ── LISTE DES POSTES (fond sombre, style prototype) ─────────── */}
+            <div
+              className="min-w-0 flex-1 overflow-hidden rounded-2xl"
+              style={{ background: "#0D1F14" }}
+            >
+              {/* Header bloc créneau */}
+              <div
+                className="px-4 py-3"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <p
+                  className="text-xs font-bold uppercase tracking-[0.18em]"
+                  style={{ color: "rgba(255,255,255,0.40)" }}
+                >
+                  Couverture des postes — glisse-dépose pour répartir
+                </p>
+              </div>
+
+              {/* Rangées de postes */}
+              <div>
+                {filteredTeams.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-sm" style={{ color: "rgba(255,255,255,0.30)" }}>
+                    Aucun poste actif
+                  </p>
+                ) : (
+                  filteredTeams.map((team, idx) => (
+                    <PlanningTeamColumn key={team.id} team={team} index={idx} />
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </DndContext>
 

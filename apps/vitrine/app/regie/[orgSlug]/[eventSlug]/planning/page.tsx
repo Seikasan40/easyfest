@@ -224,46 +224,50 @@ export default async function RegiePlanningPage({ params, searchParams }: PagePr
   const pool = allVolunteers.filter((v) => v.position_ids.length === 0);
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-5">
+      {/* ── Header ───────────────────────────────────────────────────────── */}
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2
             className="font-display text-2xl font-bold"
             style={{ color: "#1A3828" }}
           >
-            Planning par équipes
+            Couverture des postes
           </h2>
-          <p className="text-sm" style={{ color: "#7A7060" }}>
-            Glisse un bénévole d'une équipe à l'autre. Souhait respecté = ✓ vert, non respecté = ◇ or.
-          </p>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-sm" style={{ color: "#7A7060" }}>
+            <span>
+              <strong style={{ color: "#1A3828" }}>{allVolunteers.length}</strong> bénévoles
+            </span>
+            {preVolunteers.length > 0 && (
+              <span style={{ color: "#C49A2C" }}>
+                · <strong>{preVolunteers.length}</strong> sans compte (⏳)
+              </span>
+            )}
+            <span>
+              · <strong style={{ color: pool.length > 0 ? "#EF4444" : "#10B981" }}>{pool.length}</strong> sans équipe
+            </span>
+            <span>· <strong style={{ color: "#1A3828" }}>{teams.length}</strong> postes</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <Link
-            href={`/regie/${orgSlug}/${eventSlug}/planning/timeline`}
-            className="rounded-xl px-3 py-1.5 font-semibold transition hover:opacity-80"
-            style={{ background: "#FFFFFF", border: "1px solid #E5DDD0", color: "#1A3828" }}
-          >
-            📊 Timeline →
-          </Link>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <Link
             href={`/regie/${orgSlug}/${eventSlug}/planning/shifts`}
-            className="rounded-xl px-3 py-1.5 font-semibold transition hover:opacity-80"
+            className="rounded-xl px-3 py-2 font-semibold transition hover:opacity-80"
             style={{ background: "#FFFFFF", border: "1px solid #E5DDD0", color: "#1A3828" }}
           >
-            Par créneaux →
+            Par créneaux
+          </Link>
+          <Link
+            href={`/regie/${orgSlug}/${eventSlug}/planning/timeline`}
+            className="rounded-xl px-3 py-2 font-semibold transition hover:opacity-80"
+            style={{ background: "#FFFFFF", border: "1px solid #E5DDD0", color: "#1A3828" }}
+          >
+            Timeline
           </Link>
         </div>
       </header>
 
-      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "#7A7060" }}>
-        <span><strong style={{ color: "#1A3828" }}>{allVolunteers.length}</strong> bénévoles</span>
-        {preVolunteers.length > 0 && (
-          <span style={{ color: "#C49A2C" }}>· {preVolunteers.length} en attente compte</span>
-        )}
-        <span>· <strong style={{ color: "#1A3828" }}>{pool.length}</strong> sans équipe</span>
-        <span>· <strong style={{ color: "#1A3828" }}>{teams.length}</strong> équipes</span>
-      </div>
-
+      {/* ── Board ─────────────────────────────────────────────────────────── */}
       <PlanningTeamsBoard
         initialTeams={teams}
         initialPool={pool}

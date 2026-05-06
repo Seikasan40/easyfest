@@ -81,40 +81,90 @@ export function BottomNav({ orgSlug, eventSlug, unreadFil = 0 }: BottomNavProps)
 
   const isActive = (href: string, exact: boolean) => {
     if (exact) return pathname === href;
-    if (href === `${basePath}/fil`) return pathname.startsWith(`${basePath}/fil`) || pathname.startsWith(`${basePath}/chat`) || pathname.startsWith(`${basePath}/feed`);
+    if (href === `${basePath}/fil`)
+      return (
+        pathname.startsWith(`${basePath}/fil`) ||
+        pathname.startsWith(`${basePath}/chat`) ||
+        pathname.startsWith(`${basePath}/feed`)
+      );
     return pathname.startsWith(href);
   };
 
   return (
-    <nav
-      aria-label="Navigation principale"
-      className="sticky bottom-0 z-20 flex border-t border-proto-border bg-proto-paper"
-      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
-    >
-      {items.map((item) => {
-        const active = isActive(item.href, item.exact ?? false);
-        return (
-          <Link
-            key={item.key}
-            href={item.href}
-            className="relative flex flex-1 flex-col items-center gap-1 pt-3 pb-1 transition-opacity"
-            style={{ color: active ? "#1A3828" : "#9A9080" }}
-          >
-            {item.key === "fil" && unreadFil > 0 && (
-              <span className="absolute right-[calc(50%-14px)] top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#1A3828] text-[9px] font-bold text-white">
-                {unreadFil > 9 ? "9+" : unreadFil}
+    <>
+      {/*
+       * ── Desktop (≥ md) : nav sticky en haut ───────────────────────────
+       * Placée avant <main> dans le layout → sticky top-0 fonctionne
+       * correctement pour coller en haut au scroll.
+       */}
+      <nav
+        aria-label="Navigation principale"
+        className="sticky top-0 z-20 hidden items-center gap-1 border-b border-proto-border bg-proto-paper px-4 py-2 md:flex"
+      >
+        {items.map((item) => {
+          const active = isActive(item.href, item.exact ?? false);
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="relative flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              style={{
+                color: active ? "#1A3828" : "#9A9080",
+                background: active ? "rgba(26,56,40,0.08)" : "transparent",
+              }}
+            >
+              {item.key === "fil" && unreadFil > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#1A3828] text-[9px] font-bold text-white">
+                  {unreadFil > 9 ? "9+" : unreadFil}
+                </span>
+              )}
+              <span className="h-5 w-5 flex-shrink-0">{item.icon(active)}</span>
+              <span>{item.label}</span>
+              {active && (
+                <span className="absolute bottom-0 left-1/2 h-0.5 w-3/4 -translate-x-1/2 rounded-full bg-[#1A3828]" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/*
+       * ── Mobile (< md) : nav fixée en bas du viewport ──────────────────
+       * `fixed` + max-w + mx-auto pour rester centrée sur la largeur
+       * de la coque 430px même si le viewport est plus large.
+       * Le <main> dans le layout a un paddingBottom pour ne pas être caché
+       * sous cette barre.
+       */}
+      <nav
+        aria-label="Navigation principale"
+        className="fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-[430px] border-t border-proto-border bg-proto-paper md:hidden"
+        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+      >
+        {items.map((item) => {
+          const active = isActive(item.href, item.exact ?? false);
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="relative flex flex-1 flex-col items-center gap-1 pb-1 pt-3 transition-opacity"
+              style={{ color: active ? "#1A3828" : "#9A9080" }}
+            >
+              {item.key === "fil" && unreadFil > 0 && (
+                <span className="absolute right-[calc(50%-14px)] top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#1A3828] text-[9px] font-bold text-white">
+                  {unreadFil > 9 ? "9+" : unreadFil}
+                </span>
+              )}
+              {item.icon(active)}
+              <span className={`text-[10px] ${active ? "font-semibold" : "font-medium"}`}>
+                {item.label}
               </span>
-            )}
-            {item.icon(active)}
-            <span className={`text-[10px] font-medium ${active ? "font-semibold" : ""}`}>
-              {item.label}
-            </span>
-            {active && (
-              <span className="absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#1A3828]" />
-            )}
-          </Link>
-        );
-      })}
-    </nav>
+              {active && (
+                <span className="absolute bottom-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#1A3828]" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

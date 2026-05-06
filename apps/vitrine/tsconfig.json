@@ -1,21 +1,40 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "incremental": true,
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@easyfest/db": ["../../packages/db/src/index.ts"],
-      "@easyfest/db/*": ["../../packages/db/src/*"],
-      "@easyfest/shared": ["../../packages/shared/src/index.ts"],
-      "@easyfest/shared/*": ["../../packages/shared/src/*"],
-      "@easyfest/ui": ["../../packages/ui/src/index.ts"],
-      "@easyfest/ui/*": ["../../packages/ui/src/*"]
-    }
+      "@/*": [
+        "./*"
+      ],
+      "@easyfest/db": [
+        "../../packages/db/src/index.ts"
+      ],
+      "@easyfest/db/*": [
+        "../../packages/db/src/*"
+      ],
+      "@easyfest/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@easyfest/shared/*": [
+        "../../packages/shared/src/*"
+      ],
+      "@easyfest/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@easyfest/ui/*": [
+        "../../packages/ui/src/*"
+      ]
+    },
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
@@ -23,5 +42,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", ".turbo"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    ".turbo"
+  ]
 }

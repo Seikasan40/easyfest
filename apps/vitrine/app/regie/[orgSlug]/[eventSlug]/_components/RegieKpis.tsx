@@ -87,8 +87,22 @@ function Kpi({
       <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: MUTED }}>
         {label}
       </p>
-      <p className="font-display text-3xl font-bold leading-tight" style={{ color: DARK }}>
-        {value}
+      <p className="font-display leading-tight" style={{ color: DARK }}>
+        {(() => {
+          const v = String(value);
+          const slash = v.indexOf("/");
+          if (slash !== -1) {
+            return (
+              <>
+                <span className="text-4xl font-bold">{v.slice(0, slash)}</span>
+                <span className="text-2xl font-normal" style={{ color: MUTED }}>
+                  /{v.slice(slash + 1)}
+                </span>
+              </>
+            );
+          }
+          return <span className="text-4xl font-bold">{v}</span>;
+        })()}
       </p>
       {sub && (
         <p className="text-xs mt-1" style={{ color: subColor }}>

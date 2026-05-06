@@ -46,13 +46,16 @@ export default async function PosteLayout({ children, params }: Props) {
 
   return (
     <div
-      className="mx-auto min-h-screen max-w-[430px]"
+      className="mx-auto min-h-screen w-full max-w-[430px] md:max-w-3xl"
       style={{ background: "#F8F4EC" }}
     >
       {/* Header */}
       <div
-        className="px-5 pt-14 pb-5"
-        style={{ background: DARK }}
+        className="px-5 pb-5"
+        style={{
+          background: DARK,
+          paddingTop: "max(1rem, env(safe-area-inset-top))",
+        }}
       >
         <p
           className="text-xs font-bold uppercase tracking-[0.2em] mb-1"

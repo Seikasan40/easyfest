@@ -54,7 +54,7 @@ export default async function RegieLayout({ children, params }: Props) {
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
       <div
-        className="mx-auto min-h-screen max-w-[430px]"
+        className="mx-auto min-h-screen w-full max-w-[430px] md:max-w-5xl"
         style={{ background: "#F8F4EC" }}
       >
         {/* Header dark */}
@@ -62,7 +62,10 @@ export default async function RegieLayout({ children, params }: Props) {
           className="sticky top-0 z-20"
           style={{ background: "#1A3828" }}
         >
-          <div className="px-5 pt-14 pb-3">
+          <div
+            className="px-5 pb-3"
+            style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+          >
             {/* Ligne titre + actions */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">

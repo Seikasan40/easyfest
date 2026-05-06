@@ -1,3 +1,8 @@
+/**
+ * /regie/[orgSlug]/[eventSlug]/* — Layout régie / direction.
+ * Style: proto vert forêt #1A3828, nav horizontale scrollable.
+ * Auth + check direction | volunteer_lead.
+ */
 import { redirect } from "next/navigation";
 
 import { TenantThemeProvider } from "@/components/TenantThemeProvider";
@@ -26,10 +31,6 @@ export default async function RegieLayout({ children, params }: Props) {
 
   const orgId = (ev as any).organization?.id as string | undefined;
 
-  // ⚠️ Multi-memberships safe : un user peut avoir 2+ rôles actifs sur le même event
-  // (cas Sandy : volunteer + volunteer_lead). On récupère toutes les memberships
-  // actives et on vérifie qu'au moins une donne accès régie.
-  // Avant le 02/05/2026 : .maybeSingle() errorait silencieusement → redirect /hub.
   const { data: memberships } = await supabase
     .from("memberships")
     .select("role")
@@ -39,42 +40,84 @@ export default async function RegieLayout({ children, params }: Props) {
 
   const allowedRoles = ["direction", "volunteer_lead"];
   const hasAccess = (memberships ?? []).some((m: any) => allowedRoles.includes(m.role));
-  if (!hasAccess) {
-    redirect("/hub");
-  }
+  if (!hasAccess) redirect("/hub");
+
+  const orgName = (ev as any).organization?.name ?? "";
+  const eventName = ev.name ?? "";
+
+  // Calcul heure locale pour le header "LIVE"
+  const now = new Date();
+  const timeFr = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const dayFr = now.toLocaleDateString("fr-FR", { weekday: "long" });
+  const dayCapitalized = dayFr.charAt(0).toUpperCase() + dayFr.slice(1);
 
   return (
     <TenantThemeProvider organizationId={orgId} fullHeight>
-    <div className="mx-auto max-w-7xl">
-      <header
-        className="sticky top-0 z-10 border-b border-brand-ink/10 bg-white/95 px-4 py-3 backdrop-blur sm:px-6"
-        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      <div
+        className="mx-auto min-h-screen max-w-[430px]"
+        style={{ background: "#F8F4EC" }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p
-              className="truncate text-xs font-medium uppercase tracking-widest"
-              style={{ color: "var(--theme-primary, #FF5E5B)" }}
-            >
-              {(ev as any).organization?.name} · Régie
-            </p>
-            <h1 className="truncate font-display text-xl font-semibold leading-tight">
-              {ev.name}
-            </h1>
+        {/* Header dark */}
+        <div
+          className="sticky top-0 z-20"
+          style={{ background: "#1A3828" }}
+        >
+          <div className="px-5 pt-14 pb-3">
+            {/* Ligne titre + actions */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p
+                  className="text-xs font-bold uppercase tracking-[0.18em] mb-0.5"
+                  style={{ color: "rgba(255,255,255,0.50)" }}
+                >
+                  {orgName}
+                </p>
+                <h1
+                  className="font-display text-2xl font-bold leading-tight text-white truncate"
+                >
+                  {eventName}
+                </h1>
+                {/* LIVE badge */}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-xs" style={{ color: "rgba(255,255,255,0.65)" }}>
+                    {dayCapitalized} · {timeFr}
+                  </span>
+                  <span
+                    className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    style={{ background: "rgba(16,185,129,0.20)", color: "#10B981" }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
+                    LIVE
+                  </span>
+                </div>
+              </div>
+              <form action="/auth/logout" method="post" className="mt-1 flex-shrink-0">
+                <button
+                  type="submit"
+                  className="rounded-xl px-3 py-2 text-xs font-semibold transition"
+                  style={{
+                    background: "rgba(255,255,255,0.10)",
+                    color: "rgba(255,255,255,0.70)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                  }}
+                >
+                  Quitter
+                </button>
+              </form>
+            </div>
           </div>
-          <form action="/auth/logout" method="post">
-            <button className="min-h-[44px] rounded-lg border border-brand-ink/15 px-3 py-2 text-xs font-medium hover:bg-brand-ink/5">
-              Quitter
-            </button>
-          </form>
-        </div>
-        <div className="mt-3">
-          <RegieNav orgSlug={orgSlug} eventSlug={eventSlug} />
-        </div>
-      </header>
 
-      <div className="px-4 py-6 sm:px-6">{children}</div>
-    </div>
+          {/* Nav tabs */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <RegieNav orgSlug={orgSlug} eventSlug={eventSlug} />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 py-5">
+          {children}
+        </div>
+      </div>
     </TenantThemeProvider>
   );
 }

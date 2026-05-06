@@ -80,7 +80,6 @@ export default async function RegieDashboard({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold">Vue d&apos;ensemble</h2>
       <RegieKpis
         validatedVolunteers={validatedVolunteers ?? 0}
         pendingApplications={pendingApplications ?? 0}

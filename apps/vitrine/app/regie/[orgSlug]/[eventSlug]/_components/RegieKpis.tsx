@@ -1,3 +1,13 @@
+/**
+ * RegieKpis — Grille 2×2 KPI style proto.
+ * Fond blanc, valeurs en display serif, sous-texte muted.
+ * Les KPIs critiques (alertes, bien-être) ont un accent couleur.
+ */
+
+const DARK = "#1A3828";
+const BORDER = "#E5DDD0";
+const MUTED = "#7A7060";
+
 interface KpiData {
   validatedVolunteers: number;
   pendingApplications: number;
@@ -8,29 +18,41 @@ interface KpiData {
 }
 
 export function RegieKpis(props: KpiData) {
+  const {
+    validatedVolunteers,
+    pendingApplications,
+    activeAlerts,
+    redWellbeing,
+    arrivalScansToday,
+    mealsServedToday,
+  } = props;
+
   return (
-    <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-      <Kpi label="Bénévoles actifs" value={props.validatedVolunteers} emoji="🎟️" />
+    <section className="grid grid-cols-2 gap-3">
       <Kpi
-        label="Candidatures à valider"
-        value={props.pendingApplications}
-        emoji="📥"
-        tone={props.pendingApplications ? "warn" : undefined}
+        label="PRÉSENTS"
+        value={`${arrivalScansToday}/${validatedVolunteers}`}
+        sub={arrivalScansToday > 0 ? `+${arrivalScansToday} ces 60 dernières min` : "En attente d'arrivées"}
+        tone="default"
       />
       <Kpi
-        label="Alertes ouvertes"
-        value={props.activeAlerts}
-        emoji="🚨"
-        tone={props.activeAlerts ? "danger" : undefined}
+        label="BILLETS VENDUS"
+        value={validatedVolunteers}
+        sub={`+${pendingApplications} candidatures`}
+        tone="default"
       />
       <Kpi
-        label="Bien-être rouge"
-        value={props.redWellbeing}
-        emoji="❤️‍🩹"
-        tone={props.redWellbeing ? "warn" : undefined}
+        label="REPAS DISTRIBUÉS"
+        value={`${mealsServedToday}`}
+        sub={`${Math.round((mealsServedToday / Math.max(validatedVolunteers, 1)) * 100)} % du quota`}
+        tone="default"
       />
-      <Kpi label="Arrivées aujourd'hui" value={props.arrivalScansToday} emoji="🚪" />
-      <Kpi label="Repas servis" value={props.mealsServedToday} emoji="🍽️" />
+      <Kpi
+        label="ALERTES OUVERTES"
+        value={activeAlerts + redWellbeing}
+        sub={activeAlerts + redWellbeing > 0 ? "à traiter" : "Espace serein ✓"}
+        tone={activeAlerts + redWellbeing > 0 ? "danger" : "default"}
+      />
     </section>
   );
 }
@@ -38,27 +60,41 @@ export function RegieKpis(props: KpiData) {
 function Kpi({
   label,
   value,
-  emoji,
+  sub,
   tone,
 }: {
   label: string;
-  value: number;
-  emoji: string;
-  tone?: "warn" | "danger";
+  value: string | number;
+  sub?: string;
+  tone?: "default" | "warn" | "danger";
 }) {
-  const ring =
+  const subColor =
     tone === "danger"
-      ? "ring-2 ring-wellbeing-red/40"
+      ? "#EF4444"
       : tone === "warn"
-        ? "ring-2 ring-wellbeing-yellow/40"
-        : "";
+        ? "#C49A2C"
+        : MUTED;
+
   return (
-    <div className={`rounded-xl border border-brand-ink/10 bg-white p-4 ${ring}`}>
-      <p className="text-2xl">{emoji}</p>
-      <p className="mt-1 font-display text-3xl font-bold leading-tight">{value}</p>
-      <p className="text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: "#FFFFFF",
+        border: `1px solid ${BORDER}`,
+        boxShadow: "0 1px 4px rgba(26,56,40,0.06)",
+      }}
+    >
+      <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1" style={{ color: MUTED }}>
         {label}
       </p>
+      <p className="font-display text-3xl font-bold leading-tight" style={{ color: DARK }}>
+        {value}
+      </p>
+      {sub && (
+        <p className="text-xs mt-1" style={{ color: subColor }}>
+          {sub}
+        </p>
+      )}
     </div>
   );
 }

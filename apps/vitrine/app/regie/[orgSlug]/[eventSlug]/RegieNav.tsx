@@ -17,27 +17,30 @@ export function RegieNav({ orgSlug, eventSlug }: Props) {
   return (
     <nav
       aria-label="Navigation régie"
-      className="-mx-4 overflow-x-auto sm:mx-0"
+      className="overflow-x-auto"
       style={{ WebkitOverflowScrolling: "touch" }}
     >
-      <ul className="flex min-w-max items-center gap-1 px-4 sm:px-0">
+      <ul className="flex min-w-max items-center gap-1 px-4 py-2">
         {REGIE_TABS.map((tab) => {
           const href = base + tab.hrefSuffix;
           const isActive = tab.exact
             ? pathname === base || pathname === base + "/"
             : pathname.startsWith(base + tab.matchPrefix);
-          const cls = isActive
-            ? "bg-[var(--theme-primary,_#FF5E5B)]/10 font-semibold text-[var(--theme-primary,_#FF5E5B)]"
-            : "text-brand-ink/70 hover:bg-brand-ink/5 hover:text-brand-ink";
+
           return (
             <li key={tab.key}>
               <Link
                 href={href}
                 aria-current={isActive ? "page" : undefined}
-                className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-primary,_#FF5E5B)]/60 ${cls}`}
-                style={{ touchAction: "manipulation" }}
+                className="inline-flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition focus:outline-none"
+                style={{
+                  background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                  color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.50)",
+                  borderBottom: isActive ? "2px solid #C49A2C" : "2px solid transparent",
+                  touchAction: "manipulation",
+                }}
               >
-                <span aria-hidden className="text-base leading-none">{tab.emoji}</span>
+                <span aria-hidden className="text-sm leading-none">{tab.emoji}</span>
                 <span>{tab.label}</span>
               </Link>
             </li>

@@ -1,6 +1,10 @@
+/**
+ * /staff/[orgSlug]/[eventSlug]/* — Layout scanner terrain (staff_scan).
+ * Style: mode sombre, fond #0D1F14, coins dorés, comme le prototype.
+ * Auth + check rôle staff_scan / is_entry_scanner.
+ */
 import { redirect } from "next/navigation";
 
-import { TenantThemeProvider } from "@/components/TenantThemeProvider";
 import { createServerClient } from "@/lib/supabase/server";
 
 interface Props {
@@ -15,9 +19,6 @@ export default async function StaffLayout({ children, params }: Props) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect(`/auth/login?redirect=/staff/${orgSlug}/${eventSlug}`);
 
-  // Vérifier rôle staff_scan ou supérieur OU is_entry_scanner.
-  // ⚠️ Multi-memberships safe : un user peut cumuler direction + staff_scan etc. → on
-  // récupère toutes les memberships actives et on agrège le check accès.
   const { data: memberships } = await supabase
     .from("memberships")
     .select("role, is_entry_scanner, event:event_id (id, name, slug, organization:organization_id (id, slug, name))")
@@ -30,36 +31,45 @@ export default async function StaffLayout({ children, params }: Props) {
   const hasAccess = all.some(
     (m) => allowedRoles.includes(m.role) || m.is_entry_scanner === true,
   );
-  if (!hasAccess) {
-    redirect(`/hub`);
-  }
-  // On prend la 1ère membership pour les infos event/org (toutes pointent vers le même event).
-  const membership = all[0]!;
+  if (!hasAccess) redirect("/hub");
 
-  const orgId = (membership as any).event?.organization?.id as string | undefined;
+  const membership = all[0]!;
+  const eventName = (membership as any).event?.name ?? eventSlug;
+  const orgName = (membership as any).event?.organization?.name ?? orgSlug;
 
   return (
-    <TenantThemeProvider organizationId={orgId} fullHeight>
-      <div className="mx-auto flex min-h-screen max-w-md flex-col bg-brand-ink text-white">
-        <header
-          className="px-4 py-3 border-b border-white/10"
-          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+    <div
+      className="mx-auto flex min-h-screen max-w-[430px] flex-col"
+      style={{ background: "#0D1F14" }}
+    >
+      {/* Header */}
+      <div
+        className="px-5 pt-14 pb-4 flex-shrink-0"
+        style={{
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <p
+          className="text-xs font-bold uppercase tracking-[0.2em] mb-0.5"
+          style={{ color: "rgba(196,154,44,0.80)" }}
         >
-          <p
-            className="text-xs uppercase tracking-widest"
-            style={{ color: "var(--theme-primary, #FF5E5B)" }}
-          >
-            Staff terrain
-          </p>
-          <h1 className="font-display text-lg font-bold">{(membership as any).event?.name}</h1>
-        </header>
-        <main
-          className="flex-1 overflow-y-auto p-4"
-          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+          {orgName} · Mode terrain
+        </p>
+        <h1
+          className="font-display text-xl font-bold"
+          style={{ color: "#FFFFFF" }}
         >
-          {children}
-        </main>
+          {eventName}
+        </h1>
       </div>
-    </TenantThemeProvider>
+
+      {/* Content */}
+      <main
+        className="flex-1 overflow-y-auto"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
+        {children}
+      </main>
+    </div>
   );
 }

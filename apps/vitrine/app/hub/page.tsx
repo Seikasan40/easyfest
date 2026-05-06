@@ -17,7 +17,11 @@ const ROLE_ICON: Record<RoleKind, { emoji: string; bg: string }> = {
   direction:       { emoji: "🎛️", bg: "rgba(196,154,44,0.15)" },
 };
 
-export default async function HubPage() {
+export default async function HubPage({
+  searchParams,
+}: {
+  searchParams?: { event?: string };
+}) {
   const supabase = createServerClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/auth/login?redirect=/hub");
@@ -127,169 +131,179 @@ export default async function HubPage() {
     );
   }
 
-  /* ── Hub principal ──────────────────────────────────── */
+  // ── Grouper par event ──────────────────────────────────────────────────────
+  const eventOrder: string[] = [];
+  const byEvent = new Map<string, any[]>();
+  for (const m of enrichedMemberships as any[]) {
+    const eid = m.event?.id ?? "unknown";
+    if (!byEvent.has(eid)) { byEvent.set(eid, []); eventOrder.push(eid); }
+    byEvent.get(eid)!.push(m);
+  }
+
+  const selectedEventSlug = searchParams?.event ?? null;
+
+  // ── Écran festival sélectionné ─────────────────────────────────────────────
+  if (selectedEventSlug) {
+    const membershipsForEvent = (enrichedMemberships as any[]).filter(
+      (m) => m.event?.slug === selectedEventSlug,
+    );
+    const eventInfo = membershipsForEvent[0]?.event;
+    const eventName = eventInfo?.name ?? "Événement";
+    const orgName   = eventInfo?.organization?.name ?? "";
+
+    const sortedMemberships = ROLE_CARDS_ORDER.flatMap((roleCode) =>
+      membershipsForEvent
+        .filter((m: any) => m.role === roleCode)
+        .map((m: any) => ({ ...m, roleCode })),
+    );
+
+    return (
+      <main className="mx-auto min-h-screen max-w-[430px]" style={{ background: "#F8F4EC" }}>
+        {/* Header avec retour */}
+        <div className="px-5 pt-14 pb-6" style={{ background: DARK }}>
+          <Link
+            href="/hub"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold mb-4"
+            style={{ color: "rgba(255,255,255,0.55)" }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Tous les festivals
+          </Link>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] mb-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+            {orgName}
+          </p>
+          <h1 className="font-display text-2xl font-bold leading-tight" style={{ color: "#FFFFFF" }}>
+            {eventName}
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+            Choisis ton espace.
+          </p>
+        </div>
+
+        {/* Cartes rôles */}
+        <div className="px-4 py-5 space-y-2" data-testid="hub-role-list">
+          {sortedMemberships.map((m: any) => {
+            const roleCode = m.roleCode as keyof typeof ROLE_DEFINITIONS;
+            const def      = ROLE_DEFINITIONS[roleCode];
+            const orgSlug  = m.event?.organization?.slug;
+            const evSlug   = m.event?.slug;
+            const subtitle = def.subtitleTemplate
+              .replace("{firstName}", firstName)
+              .replace("{positionName}", m.position?.name ?? "tous postes");
+            const icon = ROLE_ICON[roleCode] ?? { emoji: "🎟️", bg: "rgba(26,56,40,0.10)" };
+
+            return (
+              <Link
+                key={roleCode}
+                href={`${def.routePrefix}/${orgSlug}/${evSlug}`}
+                data-role-card={roleCode}
+                className="flex items-center gap-4 rounded-2xl bg-white p-5 transition hover:opacity-90 active:scale-[0.98]"
+                style={{ border: `1px solid ${BORDER}`, boxShadow: "0 1px 6px rgba(26,56,40,0.07)" }}
+              >
+                <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-2xl" style={{ background: icon.bg }}>
+                  {icon.emoji}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-base font-bold leading-tight" style={{ color: DARK }}>
+                    {def.label}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#9A9080" }}>{subtitle}</p>
+                </div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 flex-shrink-0" style={{ color: "#C49A2C" }}>
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </Link>
+            );
+          })}
+        </div>
+
+        <Footer muted={MUTED} border={BORDER} />
+      </main>
+    );
+  }
+
+  /* ── Écran sélection festival ─────────────────────────────────────────── */
   return (
-    <main
-      className="mx-auto min-h-screen max-w-[430px]"
-      style={{ background: "#F8F4EC" }}
-    >
+    <main className="mx-auto min-h-screen max-w-[430px]" style={{ background: "#F8F4EC" }}>
       {/* Header */}
-      <div
-        className="px-5 pt-14 pb-6"
-        style={{ background: DARK }}
-      >
-        <p
-          className="text-xs font-bold uppercase tracking-[0.2em] mb-1"
-          style={{ color: "rgba(255,255,255,0.55)" }}
-        >
+      <div className="px-5 pt-14 pb-6" style={{ background: DARK }}>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] mb-1" style={{ color: "rgba(255,255,255,0.55)" }}>
           Easyfest
         </p>
-        <h1
-          className="font-display text-3xl font-bold leading-tight"
-          style={{ color: "#FFFFFF" }}
-        >
+        <h1 className="font-display text-3xl font-bold leading-tight" style={{ color: "#FFFFFF" }}>
           Salut {firstName}
         </h1>
         <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
-          Choisis ton espace pour entrer.
+          Choisis un festival pour voir tes rôles.
         </p>
       </div>
 
-      {/* Cartes rôles — groupées par festival */}
-      <div className="px-4 py-5 space-y-6" data-testid="hub-role-list">
-        {(() => {
-          // Grouper par event_id, en conservant l'ordre d'apparition
-          const eventOrder: string[] = [];
-          const byEvent = new Map<string, typeof enrichedMemberships>();
-          for (const m of enrichedMemberships as any[]) {
-            const eid = m.event?.id ?? "unknown";
-            if (!byEvent.has(eid)) {
-              byEvent.set(eid, []);
-              eventOrder.push(eid);
-            }
-            byEvent.get(eid)!.push(m);
-          }
+      {/* Boutons festivals */}
+      <div className="px-4 py-5 space-y-3" data-testid="hub-event-list">
+        {eventOrder.map((eid) => {
+          const mems      = byEvent.get(eid)!;
+          const eventInfo = mems[0]?.event;
+          const evName    = eventInfo?.name ?? "Événement";
+          const orgName   = eventInfo?.organization?.name ?? "";
+          const evSlug    = eventInfo?.slug ?? eid;
+          const roleCount = mems.length;
 
-          return eventOrder.map((eid) => {
-            const membershipsForEvent = byEvent.get(eid)!;
-            const eventInfo = membershipsForEvent[0]?.event;
-            const eventName = eventInfo?.name ?? "Événement";
-            const orgName = eventInfo?.organization?.name ?? "";
+          return (
+            <Link
+              key={eid}
+              href={`/hub?event=${evSlug}`}
+              className="flex items-center gap-4 rounded-2xl bg-white p-5 transition hover:opacity-90 active:scale-[0.98]"
+              style={{ border: `1px solid ${BORDER}`, boxShadow: "0 1px 6px rgba(26,56,40,0.07)" }}
+            >
+              {/* Icône */}
+              <span
+                className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-3xl"
+                style={{ background: "rgba(26,56,40,0.08)" }}
+              >
+                🎪
+              </span>
 
-            // Trier les cartes selon ROLE_CARDS_ORDER
-            const sortedMemberships = ROLE_CARDS_ORDER
-              .flatMap((roleCode) =>
-                membershipsForEvent
-                  .filter((m: any) => m.role === roleCode)
-                  .map((m: any) => ({ ...m, roleCode })),
-              );
-
-            return (
-              <div key={eid}>
-                {/* En-tête festival */}
-                <div className="mb-3 px-1">
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5"
-                    style={{ color: MUTED }}
-                  >
-                    {orgName}
-                  </p>
-                  <p
-                    className="font-display text-base font-bold leading-tight"
-                    style={{ color: DARK }}
-                  >
-                    {eventName}
-                  </p>
-                </div>
-
-                {/* Cartes du festival */}
-                <div className="space-y-2">
-                  {sortedMemberships.map((m: any) => {
-                    const roleCode = m.roleCode as keyof typeof ROLE_DEFINITIONS;
-                    const def = ROLE_DEFINITIONS[roleCode];
-                    const orgSlug = m.event?.organization?.slug;
-                    const eventSlug = m.event?.slug;
-                    const subtitle = def.subtitleTemplate
-                      .replace("{firstName}", firstName)
-                      .replace("{positionName}", m.position?.name ?? "tous postes");
-                    const icon = ROLE_ICON[roleCode] ?? { emoji: "🎟️", bg: "rgba(26,56,40,0.10)" };
-
-                    return (
-                      <Link
-                        key={`${roleCode}-${eid}`}
-                        href={`${def.routePrefix}/${orgSlug}/${eventSlug}`}
-                        data-role-card={roleCode}
-                        className="flex items-center gap-4 rounded-2xl bg-white p-4 transition hover:opacity-90 active:scale-[0.98]"
-                        style={{
-                          border: `1px solid ${BORDER}`,
-                          boxShadow: "0 1px 6px rgba(26,56,40,0.07)",
-                        }}
-                      >
-                        {/* Icône */}
-                        <span
-                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl"
-                          style={{ background: icon.bg }}
-                        >
-                          {icon.emoji}
-                        </span>
-
-                        {/* Texte */}
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className="font-display text-sm font-bold leading-tight"
-                            style={{ color: DARK }}
-                          >
-                            {def.label}
-                          </p>
-                          <p className="text-xs mt-0.5" style={{ color: "#9A9080" }}>
-                            {subtitle}
-                          </p>
-                        </div>
-
-                        {/* Flèche */}
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          className="h-4 w-4 flex-shrink-0"
-                          style={{ color: "#C49A2C" }}
-                        >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </Link>
-                    );
-                  })}
-                </div>
+              {/* Texte */}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: MUTED }}>
+                  {orgName}
+                </p>
+                <p className="font-display text-lg font-bold leading-tight mt-0.5" style={{ color: DARK }}>
+                  {evName}
+                </p>
+                <p className="text-xs mt-1" style={{ color: "#9A9080" }}>
+                  {roleCount} rôle{roleCount > 1 ? "s" : ""} disponible{roleCount > 1 ? "s" : ""}
+                </p>
               </div>
-            );
-          });
-        })()}
+
+              {/* Flèche */}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5 flex-shrink-0" style={{ color: "#C49A2C" }}>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
+          );
+        })}
       </div>
 
-      {/* Footer liens */}
-      <div className="px-5 pb-10 flex flex-col items-center gap-2 text-center">
-        <div
-          className="w-full h-px mb-2"
-          style={{ background: BORDER }}
-        />
-        <Link
-          href="/account/privacy"
-          className="text-xs underline underline-offset-2"
-          style={{ color: MUTED }}
-        >
-          Mes données et vie privée
-        </Link>
-        <form action="/auth/logout" method="post">
-          <button
-            type="submit"
-            className="text-xs underline underline-offset-2"
-            style={{ color: MUTED }}
-          >
-            Se déconnecter
-          </button>
-        </form>
-      </div>
+      <Footer muted={MUTED} border={BORDER} />
     </main>
+  );
+}
+
+function Footer({ muted, border }: { muted: string; border: string }) {
+  return (
+    <div className="px-5 pb-10 flex flex-col items-center gap-2 text-center">
+      <div className="w-full h-px mb-2" style={{ background: border }} />
+      <Link href="/account/privacy" className="text-xs underline underline-offset-2" style={{ color: muted }}>
+        Mes données et vie privée
+      </Link>
+      <form action="/auth/logout" method="post">
+        <button type="submit" className="text-xs underline underline-offset-2" style={{ color: muted }}>
+          Se déconnecter
+        </button>
+      </form>
+    </div>
   );
 }

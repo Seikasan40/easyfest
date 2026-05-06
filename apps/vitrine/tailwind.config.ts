@@ -29,6 +29,18 @@ const config: Config = {
           forest: "#2D5F4F",
           sand: "#F4E8D8",
         },
+        // ── Palette prototype Roots du Lac ──────────────────────────────
+        proto: {
+          dark:   "#1A3828",   // vert forêt profond — cards, CTAs, header
+          green:  "#2A5C3F",   // vert moyen — hover/focus
+          cream:  "#F8F4EC",   // fond global
+          paper:  "#FFFFFF",   // cards blanches
+          gold:   "#C49A2C",   // or ambre — timers, badges
+          "gold-bg": "#F5E9C4", // fond badge doré
+          ink:    "#1A1A1A",   // texte principal
+          muted:  "#7A7060",   // texte secondaire
+          border: "#E5DDD0",   // bordures warm
+        },
         wellbeing: {
           green: "#10B981",
           yellow: "#F4B860",

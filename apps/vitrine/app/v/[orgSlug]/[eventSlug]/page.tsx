@@ -1,11 +1,78 @@
 import Link from "next/link";
 
-import { formatDateTimeFr, timeFromNow } from "@easyfest/shared";
 import { createServerClient } from "@/lib/supabase/server";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
 }
+
+// Couleurs proto (utilisées en inline pour éviter purge Tailwind)
+const PROTO_DARK = "#1A3828";
+const PROTO_GOLD = "#C49A2C";
+const PROTO_GOLD_BG = "#F5E9C4";
+
+/** Formate une durée en "Dans X h Y" ou "Dans X min" */
+function timeUntilLabel(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return null;
+  const totalMin = Math.floor(diff / 60000);
+  if (totalMin < 60) return `Dans ${totalMin} min`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `Dans ${h} h ${m}` : `Dans ${h} h`;
+}
+
+/** "vendredi 18 h – minuit" */
+function shiftTimeLabel(startsAt: string, endsAt: string): string {
+  const start = new Date(startsAt);
+  const end = new Date(endsAt);
+  const fmtH = (d: Date) => {
+    const h = d.getHours();
+    const m = d.getMinutes();
+    if (h === 0 && m === 0) return "minuit";
+    if (h === 12 && m === 0) return "midi";
+    return m > 0 ? `${h} h ${String(m).padStart(2, "0")}` : `${h} h`;
+  };
+  const day = start.toLocaleDateString("fr-FR", { weekday: "long" });
+  return `${day} ${fmtH(start)} – ${fmtH(end)}`;
+}
+
+/** "28 · 29 · 30 mai" depuis starts_at/ends_at */
+function eventDateLabel(startsAt: string | null, endsAt: string | null): string {
+  if (!startsAt) return "";
+  const start = new Date(startsAt);
+  const end = endsAt ? new Date(endsAt) : null;
+  const month = start.toLocaleDateString("fr-FR", { month: "long" });
+  if (!end || end.getDate() === start.getDate()) {
+    return `${start.getDate()} ${month}`;
+  }
+  // Multi-jours : liste les jours du même mois
+  const days: number[] = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    days.push(cur.getDate());
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days.join(" · ") + " " + month;
+}
+
+/** Countdown J-X */
+function countdownLabel(startsAt: string | null): string {
+  if (!startsAt) return "";
+  const diff = Math.ceil((new Date(startsAt).getTime() - Date.now()) / 86400000);
+  if (diff < 0) return "En cours";
+  if (diff === 0) return "J-0";
+  if (diff === 1) return "J-1";
+  return `J-${diff}`;
+}
+
+/** Jour de la semaine en français */
+function dayLabel(): string {
+  return new Date().toLocaleDateString("fr-FR", { weekday: "long" });
+}
+
+export const dynamic = "force-dynamic";
 
 export default async function VolunteerHome({ params }: PageProps) {
   const { orgSlug, eventSlug } = await params;
@@ -14,7 +81,7 @@ export default async function VolunteerHome({ params }: PageProps) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
 
-  // Profil + event (incl. dates pour la carte festival)
+  // Profil + event
   const [{ data: profile }, { data: ev }] = await Promise.all([
     supabase
       .from("volunteer_profiles")
@@ -28,21 +95,10 @@ export default async function VolunteerHome({ params }: PageProps) {
       .maybeSingle(),
   ]);
 
-  if (!ev) return <p>Événement introuvable</p>;
+  if (!ev) return <p className="p-6 text-center">Événement introuvable</p>;
   const eventRow: any = ev;
 
-  // Convention bénévolat signée ?
-  const { data: convention } = await supabase
-    .from("signed_engagements")
-    .select("id, signed_at")
-    .eq("user_id", userData.user.id)
-    .eq("event_id", eventRow.id)
-    .eq("engagement_kind", "convention_benevolat")
-    .order("signed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // Membership active du bénévole
+  // Membership active
   const { data: ownMembership } = await (supabase as any)
     .from("memberships")
     .select("position_id, role")
@@ -53,16 +109,16 @@ export default async function VolunteerHome({ params }: PageProps) {
     .limit(1)
     .maybeSingle();
 
-  // Position + chef d'équipe + membres de l'équipe
+  // Position + chef d'équipe + membres
   let position: any = null;
   let teamLead: any = null;
-  let teamMembers: any[] = [];
+  let teamMemberNames: string[] = [];
 
   if (ownMembership?.position_id) {
-    const [posRes, leadMembershipRes, teamMembersRes] = await Promise.all([
+    const [posRes, leadMbRes] = await Promise.all([
       (supabase as any)
         .from("positions")
-        .select("id, slug, name, color, icon")
+        .select("id, name, color, icon")
         .eq("id", ownMembership.position_id)
         .maybeSingle(),
       (supabase as any)
@@ -74,63 +130,49 @@ export default async function VolunteerHome({ params }: PageProps) {
         .eq("is_active", true)
         .limit(1)
         .maybeSingle(),
-      // Membres de l'équipe (autres que soi-même, limité à 5 pour l'affichage)
-      (supabase as any)
-        .from("memberships")
-        .select("user_id")
-        .eq("event_id", eventRow.id)
-        .eq("position_id", ownMembership.position_id)
-        .eq("is_active", true)
-        .neq("user_id", userData.user.id)
-        .limit(5),
     ]);
-
     position = posRes.data;
-    const leadUserId = (leadMembershipRes.data as any)?.user_id ?? null;
-    const memberUserIds: string[] = ((teamMembersRes.data ?? []) as any[]).map((m) => m.user_id);
-
-    const profileFetches = [];
+    const leadUserId = leadMbRes.data?.user_id ?? null;
     if (leadUserId) {
-      profileFetches.push(
-        (supabase as any)
-          .from("volunteer_profiles")
-          .select("user_id, first_name, last_name, full_name, email, phone, avatar_url")
-          .eq("user_id", leadUserId)
-          .maybeSingle()
-          .then((r: any) => { teamLead = r.data ?? null; }),
+      const { data: leadProfile } = await (supabase as any)
+        .from("volunteer_profiles")
+        .select("user_id, first_name, last_name, full_name, email, phone, avatar_url")
+        .eq("user_id", leadUserId)
+        .maybeSingle();
+      teamLead = leadProfile;
+    }
+    // Autres membres de l'équipe (pour "Avec X, Y, Z")
+    const { data: otherMembers } = await (supabase as any)
+      .from("memberships")
+      .select("user_id")
+      .eq("event_id", eventRow.id)
+      .eq("position_id", ownMembership.position_id)
+      .eq("is_active", true)
+      .neq("user_id", userData.user.id)
+      .limit(4);
+    if (otherMembers && otherMembers.length > 0) {
+      const ids = otherMembers.map((m: any) => m.user_id);
+      const { data: memberProfiles } = await (supabase as any)
+        .from("volunteer_profiles")
+        .select("user_id, first_name, full_name")
+        .in("user_id", ids);
+      teamMemberNames = (memberProfiles ?? []).map(
+        (p: any) => p.first_name ?? p.full_name?.split(" ")[0] ?? "?"
       );
     }
-    if (memberUserIds.length > 0) {
-      profileFetches.push(
-        (supabase as any)
-          .from("volunteer_profiles")
-          .select("user_id, first_name, last_name, full_name, avatar_url")
-          .in("user_id", memberUserIds)
-          .then((r: any) => { teamMembers = r.data ?? []; }),
-      );
-    }
-    await Promise.all(profileFetches);
   }
 
   // Prochain créneau validé
   const { data: nextAssignment } = await supabase
     .from("assignments")
-    .select(
-      `
-      id, status, validated_by_volunteer_at,
-      shift:shift_id (
-        starts_at, ends_at,
-        position:position_id (name, color, icon, description)
-      )
-    `,
-    )
+    .select(`id, shift:shift_id (starts_at, ends_at, position:position_id (name, color, icon))`)
     .eq("volunteer_user_id", userData.user.id)
     .eq("status", "validated")
     .order("shift(starts_at)" as any, { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  // Total créneaux validés (pour le compteur MES SHIFTS)
+  // Total créneaux
   const { count: totalShifts } = await supabase
     .from("assignments")
     .select("*", { count: "exact", head: true })
@@ -145,368 +187,331 @@ export default async function VolunteerHome({ params }: PageProps) {
     .eq("volunteer_user_id", userData.user.id)
     .is("served_at", null);
 
-  // Messages non lus dans le fil (derniers 48h)
+  const { count: totalMeals } = await supabase
+    .from("meal_allowances")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventRow.id)
+    .eq("volunteer_user_id", userData.user.id);
+
+  // Messages récents (fil d'actu) — 48h, max 2 pour l'aperçu home
   const since48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   const { data: recentMessages } = await supabase
     .from("messages")
-    .select("id, content, created_at, author_profile:author_user_id (first_name, full_name)")
+    .select(`id, content, created_at, sender_user_id,
+      channel:channel_id (name, kind)`)
     .gte("created_at", since48h)
+    .eq("is_broadcast", true)
     .order("created_at", { ascending: false })
-    .limit(3) as any;
+    .limit(2) as any;
 
-  const firstName = profile?.first_name ?? profile?.full_name?.split(" ")[0] ?? "bénévole";
+  // Enrichir les messages avec le profil sender
+  let enrichedMessages: any[] = [];
+  if (recentMessages && recentMessages.length > 0) {
+    const senderIds = [...new Set((recentMessages as any[]).map((m: any) => m.sender_user_id).filter(Boolean))];
+    const { data: senderProfiles } = await supabase
+      .from("volunteer_profiles")
+      .select("user_id, first_name, full_name")
+      .in("user_id", senderIds);
+    const profileMap = new Map((senderProfiles ?? []).map((p: any) => [p.user_id, p]));
+    enrichedMessages = (recentMessages as any[]).map((m: any) => ({
+      ...m,
+      senderProfile: profileMap.get(m.sender_user_id) ?? null,
+    }));
+  }
+
+  // Labels calculés
+  const firstName = profile?.first_name ?? profile?.full_name?.split(" ")[0] ?? "toi";
+  const leadName = teamLead?.first_name ?? teamLead?.full_name?.split(" ")[0] ?? null;
   const leadInitials = teamLead
-    ? (teamLead.first_name?.[0] ?? "?") + (teamLead.last_name?.[0] ?? "")
+    ? ((teamLead.first_name?.[0] ?? "") + (teamLead.last_name?.[0] ?? teamLead.full_name?.[1] ?? "")).toUpperCase()
     : "";
 
-  // Dates event formattées
-  const eventStartDate = eventRow.starts_at
-    ? new Date(eventRow.starts_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
-    : null;
-  const eventEndDate = eventRow.ends_at
-    ? new Date(eventRow.ends_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
-    : null;
+  const shift = nextAssignment ? (nextAssignment as any).shift : null;
+  const shiftPos = shift?.position ?? position;
+  const withNames = [
+    ...(leadName ? [`${leadName} (resp.)`] : []),
+    ...teamMemberNames.slice(0, 3),
+  ];
+  const withLabel = withNames.length > 0 ? `Avec ${withNames.join(", ")}` : null;
+  const timer = shift ? timeUntilLabel(shift.starts_at) : null;
+  const shiftLabel = shift ? shiftTimeLabel(shift.starts_at, shift.ends_at) : null;
+  const dateLabel = eventDateLabel(eventRow.starts_at, eventRow.ends_at);
+  const cdLabel = countdownLabel(eventRow.starts_at);
+  const today = dayLabel();
+
+  // "il y a X min/h"
+  const timeAgoLabel = (iso: string) => {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diff < 60) return `il y a ${diff} min`;
+    const h = Math.floor(diff / 60);
+    return `il y a ${h} h`;
+  };
 
   return (
-    <div className="space-y-4 pb-4">
+    <div className="pb-6">
 
-      {/* ── CARTE FESTIVAL (verte, comme le prototype) ─────────────────── */}
-      <section
-        className="rounded-2xl p-4 text-white"
-        style={{ background: "linear-gradient(135deg, #1a7a4a 0%, #22a063 100%)" }}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
-              {(eventRow.organization as any)?.name ?? ""}
+      {/* ─── HEADER PAGE ───────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between px-5 pt-8 pb-5">
+        <div>
+          <h1
+            className="font-display text-2xl font-bold leading-tight"
+            style={{ color: PROTO_DARK, letterSpacing: "-0.01em" }}
+          >
+            Salut {firstName}
+          </h1>
+          <p className="mt-0.5 text-sm" style={{ color: "#9A9080" }}>
+            {today[0].toUpperCase() + today.slice(1)} · {cdLabel}
+          </p>
+        </div>
+        <form action="/auth/logout" method="post" className="mt-1">
+          <button
+            type="submit"
+            className="rounded-xl border px-3 py-1.5 text-xs font-medium"
+            style={{ borderColor: "#E5DDD0", color: "#9A9080", background: "white" }}
+          >
+            Quitter
+          </button>
+        </form>
+      </div>
+
+      {/* ─── CARTE ÉVÉNEMENT (vert forêt) ──────────────────────────────── */}
+      <div className="relative mx-5 overflow-hidden rounded-2xl p-5 text-white"
+        style={{ background: PROTO_DARK }}>
+        {/* Pastille dorée */}
+        <div
+          className="absolute right-5 top-5 h-4 w-4 rounded-full"
+          style={{ background: PROTO_GOLD }}
+        />
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.2em]"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
+          {(eventRow.organization as any)?.name ?? "Édition"}
+        </p>
+        <h2
+          className="mt-1 font-display text-3xl font-bold leading-tight"
+          style={{ letterSpacing: "-0.02em" }}
+        >
+          {eventRow.name}
+        </h2>
+        {dateLabel && (
+          <p className="mt-2 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+            {dateLabel}
+          </p>
+        )}
+      </div>
+
+      {/* ─── CARTE PROCHAIN SHIFT (vert forêt) ─────────────────────────── */}
+      {shift ? (
+        <div
+          className="relative mx-5 mt-3 overflow-hidden rounded-2xl p-5 text-white"
+          style={{ background: PROTO_DARK }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.2em]"
+            style={{ color: "rgba(255,255,255,0.55)" }}
+          >
+            Ton prochain shift
+          </p>
+          <h2
+            className="mt-1 font-display text-xl font-bold leading-snug"
+            style={{ letterSpacing: "-0.01em" }}
+          >
+            {shiftPos?.icon ? `${shiftPos.icon} ` : ""}
+            {shiftPos?.name ?? position?.name ?? "Bénévolat"} · {shiftLabel}
+          </h2>
+          {withLabel && (
+            <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+              {withLabel}
             </p>
-            <h1 className="font-display text-xl font-bold leading-tight">{eventRow.name}</h1>
-            {eventRow.location && (
-              <p className="mt-0.5 text-xs text-white/80">📍 {eventRow.location}</p>
-            )}
-          </div>
-          {eventStartDate && (
-            <div className="flex-shrink-0 rounded-xl bg-white/20 px-3 py-2 text-center backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/80">
-                {eventEndDate && eventEndDate !== eventStartDate ? "Du" : "Le"}
-              </p>
-              <p className="text-sm font-bold leading-tight">{eventStartDate}</p>
-              {eventEndDate && eventEndDate !== eventStartDate && (
-                <p className="text-xs text-white/80">au {eventEndDate}</p>
-              )}
+          )}
+          {timer && (
+            <div
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold"
+              style={{ background: PROTO_GOLD_BG, color: "#7A5800" }}
+            >
+              ⏰ {timer} — pense à arriver 15 min avant
             </div>
           )}
-        </div>
-        {/* Greeting dans la carte */}
-        <div className="mt-3 border-t border-white/20 pt-3">
-          <p className="text-sm font-medium">
-            Salut <span className="font-bold">{firstName}</span> 👋
-          </p>
-          <p className="text-xs text-white/70">
-            {convention ? "Convention signée ✓" : "⚠️ Convention à signer"}
-            {position ? ` · Équipe ${position.name}` : ""}
-            {(totalShifts ?? 0) > 0 ? ` · ${totalShifts} créneau${(totalShifts ?? 0) > 1 ? "x" : ""}` : ""}
-          </p>
-        </div>
-      </section>
 
-      {/* ── PROCHAIN CRÉNEAU ───────────────────────────────────────────── */}
-      {nextAssignment ? (
-        <section className="rounded-2xl border border-brand-ink/10 bg-white p-5 shadow-soft">
-          <p className="text-xs font-medium uppercase tracking-widest text-brand-ink/50">
-            Prochain créneau
-          </p>
-          <h2 className="mt-1 font-display text-xl font-semibold">
-            {(nextAssignment as any).shift?.position?.icon}{" "}
-            {(nextAssignment as any).shift?.position?.name}
-          </h2>
-          <p className="mt-1 text-sm text-brand-ink/70">
-            {formatDateTimeFr((nextAssignment as any).shift?.starts_at)}
-          </p>
-          <p className="text-xs font-medium text-[var(--theme-primary,_#FF5E5B)]">
-            {timeFromNow((nextAssignment as any).shift?.starts_at)}
-          </p>
-
-          {/* 3 boutons : Mon QR · Plan · Mon resp. */}
+          {/* Boutons action */}
           <div className="mt-4 grid grid-cols-3 gap-2">
             <Link
-              href={`/v/${orgSlug}/${eventSlug}/qr`}
-              className="flex flex-col items-center gap-1 rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-2 py-3 text-center text-xs font-semibold text-white"
-            >
-              <span className="text-lg">🎟️</span>
-              Mon QR
-            </Link>
-            <Link
               href={`/v/${orgSlug}/${eventSlug}/plan`}
-              className="flex flex-col items-center gap-1 rounded-xl border border-brand-ink/15 bg-white px-2 py-3 text-center text-xs font-medium text-brand-ink"
+              className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold text-white"
+              style={{ background: "rgba(255,255,255,0.15)" }}
             >
-              <span className="text-lg">🗺️</span>
-              Plan
+              📍 Plan
             </Link>
             {teamLead ? (
               <a
                 href={teamLead.phone ? `tel:${teamLead.phone}` : `mailto:${teamLead.email}`}
-                className="flex flex-col items-center gap-1 rounded-xl border border-brand-ink/15 bg-white px-2 py-3 text-center text-xs font-medium text-brand-ink"
+                className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold text-white"
+                style={{ background: "rgba(255,255,255,0.15)" }}
               >
-                <span className="text-lg">👤</span>
-                Mon resp.
+                💬 Mon resp.
               </a>
             ) : (
               <Link
-                href={`/v/${orgSlug}/${eventSlug}/safer`}
-                className="flex flex-col items-center gap-1 rounded-xl border border-brand-ink/15 bg-white px-2 py-3 text-center text-xs font-medium text-brand-ink"
+                href={`/v/${orgSlug}/${eventSlug}/chat`}
+                className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold text-white"
+                style={{ background: "rgba(255,255,255,0.15)" }}
               >
-                <span className="text-lg">🛡️</span>
-                Safer
+                💬 Mon resp.
               </Link>
             )}
+            <Link
+              href={`/v/${orgSlug}/${eventSlug}/safer`}
+              className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold"
+              style={{ background: PROTO_GOLD_BG, color: "#7A5800" }}
+            >
+              ⚠️ J&apos;ai un imprévu
+            </Link>
           </div>
-        </section>
+        </div>
       ) : (
-        <section className="rounded-2xl border border-dashed border-brand-ink/15 bg-white/50 p-5 text-center">
-          <p className="text-3xl">⏳</p>
-          <p className="mt-2 font-medium">En attente d'affectation</p>
-          <p className="mt-1 text-sm text-brand-ink/60">
-            L'équipe régie regarde ton profil. Tu recevras une notif dès que ton planning est prêt.
+        <div
+          className="mx-5 mt-3 rounded-2xl p-5"
+          style={{ background: "white", border: "1px solid #E5DDD0" }}
+        >
+          <p className="text-center text-sm" style={{ color: "#9A9080" }}>
+            ⏳ En attente d&apos;affectation — la régie prépare ton planning.
           </p>
-        </section>
+        </div>
       )}
 
-      {/* ── CTA QR ENTRÉE (gros bouton, toujours visible) ─────────────── */}
-      <Link
-        href={`/v/${orgSlug}/${eventSlug}/qr`}
-        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[var(--theme-primary,_#FF5E5B)] px-5 py-4 text-base font-bold text-white shadow-soft transition hover:opacity-90"
-        style={{ minHeight: "64px" }}
-      >
-        <span className="text-2xl">🎟️</span>
-        Afficher mon QR pour entrer
-      </Link>
-
-      {/* ── STATS RAPIDES ─────────────────────────────────────────────── */}
-      <section className="grid grid-cols-3 gap-2">
-        <div className="flex flex-col items-center justify-center rounded-xl border border-brand-ink/10 bg-white p-3 text-center">
-          <p className="text-xl">🍽️</p>
-          <p className="mt-1 font-display text-2xl font-bold">{mealsRemaining ?? 0}</p>
-          <p className="text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">Repas</p>
-        </div>
+      {/* ─── STATS (2 cards) ───────────────────────────────────────────── */}
+      <div className="mx-5 mt-4 grid grid-cols-2 gap-3">
         <Link
           href={`/v/${orgSlug}/${eventSlug}/planning`}
-          className="flex flex-col items-center justify-center rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-brand-ink/5"
+          className="rounded-2xl p-4"
+          style={{ background: "white", border: "1px solid #E5DDD0" }}
         >
-          <p className="text-xl">🗓️</p>
-          <p className="mt-1 font-display text-2xl font-bold">{totalShifts ?? 0}</p>
-          <p className="text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "#9A9080" }}>
             Mes shifts
           </p>
+          <p
+            className="mt-1 font-display text-4xl font-bold leading-none"
+            style={{ color: PROTO_DARK, letterSpacing: "-0.03em" }}
+          >
+            {totalShifts ?? 0}
+          </p>
+          <p className="mt-1 text-xs" style={{ color: "#9A9080" }}>
+            sur tout l&apos;événement
+          </p>
         </Link>
-        <Link
-          href={`/v/${orgSlug}/${eventSlug}/wellbeing`}
-          className="flex flex-col items-center justify-center rounded-xl border border-brand-ink/10 bg-white p-3 text-center hover:bg-brand-ink/5"
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: "white", border: "1px solid #E5DDD0" }}
         >
-          <p className="text-xl">💚</p>
-          <p className="mt-1 font-display text-2xl font-bold">OK</p>
-          <p className="text-[10px] font-medium uppercase tracking-widest text-brand-ink/50">Bien-être</p>
-        </Link>
-      </section>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "#9A9080" }}>
+            Repas restants
+          </p>
+          <p
+            className="mt-1 font-display text-4xl font-bold leading-none"
+            style={{ color: PROTO_DARK, letterSpacing: "-0.03em" }}
+          >
+            {mealsRemaining ?? 0}
+            {totalMeals ? (
+              <span className="text-xl font-normal" style={{ color: "#9A9080" }}>
+                /{totalMeals}
+              </span>
+            ) : null}
+          </p>
+          <p className="mt-1 text-xs" style={{ color: "#9A9080" }}>
+            récupère ton p&apos;tit déj !
+          </p>
+        </div>
+      </div>
 
-      {/* ── DU NOUVEAU (messages récents) ─────────────────────────────── */}
-      {recentMessages && recentMessages.length > 0 && (
-        <section>
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-brand-ink/50">
-              📣 Du nouveau
-            </h3>
-            <Link
-              href={`/v/${orgSlug}/${eventSlug}/feed`}
-              className="text-xs font-medium text-[var(--theme-primary,_#FF5E5B)] hover:underline"
-            >
-              Tout voir →
-            </Link>
+      {/* ─── DU NOUVEAU ────────────────────────────────────────────────── */}
+      {enrichedMessages.length > 0 && (
+        <div className="mx-5 mt-5">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="h-px flex-1" style={{ background: "#E5DDD0" }} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "#9A9080" }}>
+              Du nouveau
+            </span>
+            <div className="h-px flex-1" style={{ background: "#E5DDD0" }} />
           </div>
-          <ul className="space-y-2">
-            {(recentMessages as any[]).map((msg: any) => {
-              const authorName =
-                (msg.author_profile as any)?.first_name ??
-                (msg.author_profile as any)?.full_name ??
+          <div className="space-y-3">
+            {enrichedMessages.map((msg: any) => {
+              const senderName =
+                msg.senderProfile?.first_name ??
+                msg.senderProfile?.full_name?.split(" ")[0] ??
                 "Régie";
-              const preview = (msg.content as string)?.slice(0, 90) ?? "";
+              const channelLabel = msg.channel?.kind === "admin"
+                ? "Régie"
+                : msg.channel?.kind === "responsibles"
+                ? "Resp."
+                : msg.channel?.name ?? "Équipe";
               return (
-                <li
+                <div
                   key={msg.id}
-                  className="rounded-xl border border-brand-ink/10 bg-white px-3 py-2.5"
+                  className="rounded-2xl p-4"
+                  style={{
+                    background: "white",
+                    borderLeft: `3px solid ${PROTO_DARK}`,
+                    border: `1px solid #E5DDD0`,
+                    borderLeftWidth: "3px",
+                    borderLeftColor: PROTO_DARK,
+                  }}
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-primary,_#FF5E5B)]">
-                    {authorName}
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-wider"
+                    style={{ color: "#9A9080" }}
+                  >
+                    {senderName.toUpperCase()} · {channelLabel.toUpperCase()}
                   </p>
-                  <p className="mt-0.5 text-sm text-brand-ink/80 leading-snug">
-                    {preview}{preview.length >= 90 ? "…" : ""}
+                  <p className="mt-1 text-sm leading-snug" style={{ color: "#2A2520" }}>
+                    {msg.content}
                   </p>
-                </li>
+                  <p className="mt-1 text-[10px]" style={{ color: "#B0A898" }}>
+                    {timeAgoLabel(msg.created_at)}
+                  </p>
+                </div>
               );
             })}
-          </ul>
-        </section>
-      )}
-
-      {/* ── MON ÉQUIPE ────────────────────────────────────────────────── */}
-      {position && (
-        <section className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-brand-ink/50">
-              <span aria-hidden="true">{position.icon ?? "👥"}</span>
-              <span>Mon équipe — {position.name}</span>
-            </h3>
-            <Link
-              href={`/v/${orgSlug}/${eventSlug}/feed`}
-              className="inline-flex min-h-[40px] items-center gap-1 rounded-xl bg-[var(--theme-primary,_#FF5E5B)] px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:opacity-90"
-              style={{ touchAction: "manipulation" }}
-            >
-              💬 Tchat équipe
-            </Link>
           </div>
-
-          {/* Chef d'équipe */}
-          {teamLead ? (
-            <article className="flex items-center gap-3 rounded-2xl border border-brand-ink/10 bg-white p-3">
-              {teamLead.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={teamLead.avatar_url}
-                  alt=""
-                  className="h-12 w-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 text-sm font-semibold uppercase text-[var(--theme-primary,_#FF5E5B)]">
-                  {leadInitials}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-primary,_#FF5E5B)]">
-                  Responsable d'équipe
-                </p>
-                <p className="truncate text-sm font-medium">
-                  {teamLead.full_name ??
-                    `${teamLead.first_name ?? ""} ${teamLead.last_name ?? ""}`.trim()}
-                </p>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-brand-ink/60">
-                  {teamLead.phone && (
-                    <a
-                      href={`tel:${teamLead.phone}`}
-                      className="hover:text-[var(--theme-primary,_#FF5E5B)]"
-                    >
-                      📞 {teamLead.phone}
-                    </a>
-                  )}
-                  {teamLead.email && (
-                    <a
-                      href={`mailto:${teamLead.email}`}
-                      className="truncate hover:text-[var(--theme-primary,_#FF5E5B)]"
-                    >
-                      ✉️ {teamLead.email}
-                    </a>
-                  )}
-                </div>
-              </div>
-              {/* Bouton Contacter */}
-              {(teamLead.phone || teamLead.email) && (
-                <a
-                  href={teamLead.phone ? `tel:${teamLead.phone}` : `mailto:${teamLead.email}`}
-                  className="flex-shrink-0 rounded-xl border border-[var(--theme-primary,_#FF5E5B)] px-3 py-2 text-xs font-semibold text-[var(--theme-primary,_#FF5E5B)] hover:bg-[var(--theme-primary,_#FF5E5B)]/5"
-                  style={{ minHeight: "40px" }}
-                >
-                  Contacter
-                </a>
-              )}
-            </article>
-          ) : (
-            <p className="rounded-2xl border border-dashed border-brand-ink/15 bg-white/50 p-3 text-xs text-brand-ink/55">
-              Pas encore de responsable désigné·e. La régie va affecter quelqu'un sous peu.
-            </p>
-          )}
-
-          {/* Membres de l'équipe */}
-          {teamMembers.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {teamMembers.map((m: any) => {
-                const initials =
-                  (m.first_name?.[0] ?? m.full_name?.[0] ?? "?").toUpperCase();
-                return (
-                  <div
-                    key={m.user_id}
-                    className="flex items-center gap-1.5 rounded-full border border-brand-ink/10 bg-white px-2.5 py-1 text-xs font-medium text-brand-ink/70"
-                    title={m.full_name ?? m.first_name ?? ""}
-                  >
-                    {m.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.avatar_url}
-                        alt=""
-                        className="h-5 w-5 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-ink/10 text-[9px] font-bold text-brand-ink/60">
-                        {initials}
-                      </span>
-                    )}
-                    <span>{m.first_name ?? m.full_name?.split(" ")[0] ?? "?"}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+        </div>
       )}
 
-      {/* ── CHARTE & ENGAGEMENTS ──────────────────────────────────────── */}
-      <section>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-widest text-brand-ink/50">
-          Charte & engagements
-        </h3>
-        <div className="space-y-2">
-          <Link
-            href={`/v/${orgSlug}/${eventSlug}/convention`}
-            className={`block rounded-xl border p-4 text-sm transition ${
-              convention
-                ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
-                : "border-amber-300 bg-amber-50 ring-2 ring-amber-200 hover:bg-amber-100"
-            }`}
+      {/* ─── CTA QR ENTRÉE ─────────────────────────────────────────────── */}
+      <div className="mx-5 mt-5 space-y-3">
+        <Link
+          href={`/v/${orgSlug}/${eventSlug}/qr`}
+          className="flex w-full items-center justify-center rounded-2xl py-4 text-base font-bold text-white transition hover:opacity-90"
+          style={{ background: PROTO_DARK, minHeight: "56px" }}
+        >
+          Afficher mon QR pour entrer
+        </Link>
+        {teamLead && (leadName) && (
+          <a
+            href={teamLead.phone ? `tel:${teamLead.phone}` : `mailto:${teamLead.email}`}
+            className="flex w-full items-center justify-center rounded-2xl py-4 text-base font-semibold transition hover:bg-proto-border/30"
+            style={{
+              background: "white",
+              border: "1px solid #E5DDD0",
+              color: PROTO_DARK,
+              minHeight: "56px",
+            }}
           >
-            {convention ? (
-              <span className="flex items-center justify-between gap-2">
-                <span>📝 Convention de bénévolat signée</span>
-                <span className="text-xs font-semibold text-emerald-700">
-                  ✓ {new Date(convention.signed_at).toLocaleDateString("fr-FR")}
-                </span>
-              </span>
-            ) : (
-              <span className="flex items-center justify-between gap-2">
-                <span>
-                  <strong>📝 Convention de bénévolat à signer</strong>
-                  <span className="ml-1 text-xs text-amber-800">(obligatoire)</span>
-                </span>
-                <span className="text-xs font-semibold text-amber-800">→</span>
-              </span>
-            )}
-          </Link>
-          <Link
-            href={`/v/${orgSlug}/${eventSlug}/charter`}
-            className="block rounded-xl border border-brand-ink/10 bg-white p-4 text-sm hover:bg-brand-ink/5"
-          >
-            📜 Relire la charte de l'événement et l'engagement anti-harcèlement
-          </Link>
-        </div>
-      </section>
+            Contacter {leadName}
+          </a>
+        )}
+      </div>
 
-      {/* ── LIENS UTILES ──────────────────────────────────────────────── */}
-      <section className="flex flex-col gap-1">
+      {/* ─── LIENS UTILES ──────────────────────────────────────────────── */}
+      <div className="mx-5 mt-5 flex flex-col items-center gap-1">
         <Link
           href={`/v/${orgSlug}/${eventSlug}/profile`}
-          className="flex items-center justify-between rounded-xl border border-brand-ink/10 bg-white px-4 py-3 text-sm font-medium text-brand-ink hover:bg-brand-ink/5"
+          className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition hover:opacity-80"
+          style={{ color: "#9A9080" }}
         >
-          <span>👤 Mon compte</span>
-          <span className="text-brand-ink/40">→</span>
+          <span>⚙ Mon compte</span>
+          <span>→</span>
         </Link>
-      </section>
+      </div>
 
     </div>
   );

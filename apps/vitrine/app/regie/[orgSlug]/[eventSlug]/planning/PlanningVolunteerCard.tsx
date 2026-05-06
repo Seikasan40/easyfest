@@ -21,23 +21,27 @@ interface Props {
   v: PlanningVolunteer;
   currentTeamId: string | null;
   currentTeamSlug?: string;
+  teamColor?: string;
 }
 
-export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Props) {
+// Couleur avatar déterministe
+const AVATAR_COLORS = [
+  "#1A3828", "#2D5A3D", "#7A5800", "#8B2635",
+  "#1A4A6B", "#4A3D7A", "#6B4A1A", "#2D6B5A",
+];
+function avatarBg(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!;
+}
+
+export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug, teamColor }: Props) {
   const { openMenu, onInviteRequest } = useAssign();
-  // ⚠️ Drag activé pour TOUS, y compris pending_account (pre-volunteers).
-  // Pam pré-assigne les équipes avant que les bénévoles aient activé leur compte ;
-  // assignVolunteerToTeam détecte le préfixe "pre-" et affiche un message clair invitant
-  // à utiliser le bouton 📧 Inviter dans /candidatures pour finaliser leur compte.
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `v-${v.user_id}`,
   });
 
-  // Trigger commun pour tap mobile + long-press desktop.
-  // Bug #16 fix mobile : on ouvre TOUJOURS le menu d'équipes — le menu lui-même
-  // affiche le warning "Compte pas encore créé" pour pending_account et propose
-  // d'inviter. Avant : tap court sur pre-volunteer ne faisait que rappeler
-  // d'inviter via toast → pas de menu → bénévoles pré-comptes immobilisés en mobile.
   const triggerMenu = useCallback(() => {
     openMenu(
       {
@@ -50,8 +54,6 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
       },
       currentTeamId,
     );
-    // Hint additionnel pour les pre-volunteers : on signale aussi l'option Inviter,
-    // mais le menu reste accessible (le serveur fera le upgrade auto si possible).
     if (v.pending_account && v.email) {
       onInviteRequest?.(v.email);
     }
@@ -67,21 +69,10 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
     v.user_id,
   ]);
 
-  // ⚠️ ARCHITECTURE DRAG vs MENU :
-  // — Le DRAG est géré 100% par @dnd-kit via {...listeners} (PointerSensor distance:8 +
-  //   TouchSensor delay:250 + MouseSensor distance:8). On NE TOUCHE PAS à listeners,
-  //   sinon le pointer capture casse silencieusement (ce qui était le bug avant ce fix).
-  // — Le MENU s'ouvre via 2 chemins NON-INTERFÉRANTS avec dnd-kit :
-  //   1. Mobile (pointer:coarse) → onClick handleClick = tap rapide ouvre menu
-  //      (le drag mobile démarre via long-press 250ms du TouchSensor → pas de conflit).
-  //   2. Desktop (pointer:fine) → onContextMenu (clic droit) = ouvre menu
-  //      (le drag desktop démarre via mouvement >8px → click sans drag ne fait rien).
-  // Plus de useLongPress (qui posait un onPointerDown qui tuait le drag de dnd-kit).
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (isDragging) return;
       if (typeof window === "undefined") return;
-      // Tap mobile (coarse pointer) = ouvre menu
       if (window.matchMedia?.("(pointer: coarse)").matches) {
         e.preventDefault();
         e.stopPropagation();
@@ -99,25 +90,33 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
     [triggerMenu],
   );
 
-  // Bug #16 fix mobile DnD : `touch-action: none` empêche le browser d'interpréter
-  // le touch comme un scroll vertical de la page, ce qui préemptait le long-press
-  // 250ms de TouchSensor. Sans ça, sur mobile, dès que le doigt bouge un peu, la
-  // page scroll au lieu d'activer le drag. Avec `none`, la page reste figée pendant
-  // le touch sur la carte → TouchSensor peut détecter le long-press correctement.
   const baseStyle: React.CSSProperties = { touchAction: "none" };
   const style: React.CSSProperties = transform
     ? { ...baseStyle, transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : baseStyle;
 
   const matchesCurrent = !!currentTeamSlug && v.preferred_slugs.includes(currentTeamSlug);
-  const wantedTeams = v.preferred_slugs.slice(0, 3);
-
   const initial = (v.first_name?.[0] ?? v.full_name[0] ?? "?").toUpperCase();
+  const bg = teamColor ?? avatarBg(v.full_name);
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        background: v.pending_account ? "rgba(196,154,44,0.04)" : "#FFFFFF",
+        border: isDragging
+          ? "1.5px solid #C49A2C"
+          : v.pending_account
+          ? "1px solid rgba(196,154,44,0.30)"
+          : "1px solid #E5DDD0",
+        borderRadius: "12px",
+        boxShadow: isDragging
+          ? "0 4px 16px rgba(196,154,44,0.20)"
+          : "0 1px 3px rgba(26,56,40,0.06)",
+        padding: "8px 10px",
+        cursor: "grab",
+      }}
       {...attributes}
       {...listeners}
       onClick={handleClick}
@@ -125,75 +124,90 @@ export function PlanningVolunteerCard({ v, currentTeamId, currentTeamSlug }: Pro
       role="button"
       tabIndex={0}
       aria-label={`Bénévole ${v.full_name}. Glisse vers une équipe ou clic droit pour le menu.`}
-      className={`group relative rounded-lg border bg-white p-2 text-xs shadow-sm transition select-none cursor-grab active:cursor-grabbing ${
-        v.pending_account ? "border-blue-200 bg-blue-50/30 opacity-80" : ""
-      } ${
-        isDragging
-          ? "border-[var(--theme-primary,_#FF5E5B)] shadow-glow ring-2 ring-[var(--theme-primary,_#FF5E5B)]/30"
-          : "border-brand-ink/10 hover:border-[var(--theme-primary,_#FF5E5B)]/40 hover:shadow"
-      }`}
+      className="select-none active:cursor-grabbing transition"
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-2">
+        {/* Avatar */}
         {v.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={v.avatar_url}
             alt=""
-            className="h-8 w-8 flex-none rounded-full object-cover"
+            className="h-7 w-7 flex-none rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-[var(--theme-primary,_#FF5E5B)]/15 text-[11px] font-bold text-[var(--theme-primary,_#FF5E5B)]">
+          <div
+            className="flex h-7 w-7 flex-none items-center justify-center rounded-full text-[10px] font-bold text-white"
+            style={{ background: bg }}
+          >
             {initial}
           </div>
         )}
+
+        {/* Nom */}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold leading-tight">
+          <p
+            className="truncate text-xs font-semibold leading-tight"
+            style={{ color: "#1A3828" }}
+          >
             {v.first_name ?? v.full_name}
             {v.is_returning && (
-              <span className="ml-1 text-amber-600" title="Bénévole fidèle">
-                ★
-              </span>
+              <span className="ml-1 text-[10px]" style={{ color: "#C49A2C" }} title="Bénévole fidèle">★</span>
             )}
             {v.pending_account && (
               <span
-                className="ml-1 inline-block rounded bg-blue-100 px-1 text-[8px] font-bold text-blue-700"
-                title="Compte pas encore créé — appui long pour inviter"
+                className="ml-1 inline-block rounded px-1 text-[8px] font-bold"
+                style={{ background: "rgba(196,154,44,0.12)", color: "#7A5800" }}
+                title="Compte pas encore créé"
               >
                 ⏳
               </span>
             )}
           </p>
-          {v.email && <p className="truncate text-[10px] text-brand-ink/50">{v.email}</p>}
+          {v.email && (
+            <p className="truncate text-[10px]" style={{ color: "#9A9080" }}>{v.email}</p>
+          )}
         </div>
+
+        {/* Match indicateur */}
         {currentTeamSlug && (
           <span
-            className={`flex-none text-[11px] font-bold ${
-              matchesCurrent ? "text-emerald-600" : "text-amber-500"
-            }`}
+            className="flex-none text-[11px] font-bold"
+            style={{ color: matchesCurrent ? "#10B981" : "#C49A2C" }}
             title={matchesCurrent ? "Souhait respecté" : "Pas son souhait initial"}
           >
             {matchesCurrent ? "✓" : "◇"}
           </span>
         )}
       </div>
-      {wantedTeams.length > 0 && (
+
+      {/* Souhaits */}
+      {v.preferred_slugs.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {wantedTeams.map((slug) => (
+          {v.preferred_slugs.slice(0, 3).map((slug) => (
             <span
               key={slug}
-              className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase ${
+              className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase"
+              style={
                 slug === currentTeamSlug
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-brand-ink/8 text-brand-ink/70"
-              }`}
+                  ? { background: "rgba(16,185,129,0.10)", color: "#10B981" }
+                  : { background: "rgba(26,56,40,0.06)", color: "#7A7060" }
+              }
             >
               {slug}
             </span>
           ))}
         </div>
       )}
+
+      {/* Bio courte */}
       {v.bio && (
-        <p className="mt-1 line-clamp-2 text-[10px] italic text-brand-ink/60">&ldquo;{v.bio}&rdquo;</p>
+        <p
+          className="mt-1 line-clamp-1 text-[10px] italic"
+          style={{ color: "#9A9080" }}
+        >
+          &ldquo;{v.bio}&rdquo;
+        </p>
       )}
     </div>
   );

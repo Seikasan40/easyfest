@@ -227,34 +227,41 @@ export default async function RegiePlanningPage({ params, searchParams }: PagePr
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-bold">Planning par équipes</h2>
-          <p className="text-sm text-brand-ink/60">
-            Glisse un bénévole d'une équipe à l'autre. Ses souhaits exprimés à l'inscription apparaissent
-            sur sa carte (pastille verte ✓ si l'équipe correspond, orange ◇ sinon).
+          <h2
+            className="font-display text-2xl font-bold"
+            style={{ color: "#1A3828" }}
+          >
+            Planning par équipes
+          </h2>
+          <p className="text-sm" style={{ color: "#7A7060" }}>
+            Glisse un bénévole d'une équipe à l'autre. Souhait respecté = ✓ vert, non respecté = ◇ or.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <Link
             href={`/regie/${orgSlug}/${eventSlug}/planning/timeline`}
-            className="rounded-lg border border-brand-ink/15 px-3 py-1.5 font-medium text-brand-ink/80 hover:bg-brand-ink/5"
+            className="rounded-xl px-3 py-1.5 font-semibold transition hover:opacity-80"
+            style={{ background: "#FFFFFF", border: "1px solid #E5DDD0", color: "#1A3828" }}
           >
             📊 Timeline →
           </Link>
           <Link
             href={`/regie/${orgSlug}/${eventSlug}/planning/shifts`}
-            className="rounded-lg border border-brand-ink/15 px-3 py-1.5 font-medium text-brand-ink/80 hover:bg-brand-ink/5"
+            className="rounded-xl px-3 py-1.5 font-semibold transition hover:opacity-80"
+            style={{ background: "#FFFFFF", border: "1px solid #E5DDD0", color: "#1A3828" }}
           >
-            Vue par créneaux →
+            Par créneaux →
           </Link>
         </div>
       </header>
 
-      <div className="flex gap-3 text-xs text-brand-ink/60">
-        <span><strong>{allVolunteers.length}</strong> bénévoles ({preVolunteers.length} en attente compte)</span>
-        <span>·</span>
-        <span><strong>{pool.length}</strong> en attente d'équipe</span>
-        <span>·</span>
-        <span><strong>{teams.length}</strong> équipes</span>
+      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "#7A7060" }}>
+        <span><strong style={{ color: "#1A3828" }}>{allVolunteers.length}</strong> bénévoles</span>
+        {preVolunteers.length > 0 && (
+          <span style={{ color: "#C49A2C" }}>· {preVolunteers.length} en attente compte</span>
+        )}
+        <span>· <strong style={{ color: "#1A3828" }}>{pool.length}</strong> sans équipe</span>
+        <span>· <strong style={{ color: "#1A3828" }}>{teams.length}</strong> équipes</span>
       </div>
 
       <PlanningTeamsBoard

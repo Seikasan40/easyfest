@@ -6,6 +6,10 @@ import { PlanningVolunteerCard, type PlanningVolunteer } from "./PlanningVolunte
 
 export const POOL_ID = "__pool__";
 
+const DARK = "#1A3828";
+const BORDER = "#E5DDD0";
+const MUTED = "#7A7060";
+
 interface TeamProps {
   team: {
     id: string;
@@ -25,40 +29,57 @@ export function PlanningTeamColumn({ team }: TeamProps) {
   const need = team.needs_count_default;
   const status = filled >= need ? "complete" : filled > 0 ? "partial" : "empty";
 
+  const badgeStyle =
+    status === "complete"
+      ? { background: "rgba(16,185,129,0.12)", color: "#10B981" }
+      : status === "partial"
+      ? { background: "rgba(196,154,44,0.12)", color: "#C49A2C" }
+      : { background: "rgba(26,56,40,0.06)", color: MUTED };
+
   return (
     <section
       ref={setNodeRef}
       id={`team-${team.slug}`}
-      className={`flex min-h-[140px] flex-col rounded-2xl border-2 bg-white p-3 shadow-sm transition ${
-        isOver ? "border-[var(--theme-primary,_#FF5E5B)] ring-2 ring-[var(--theme-primary,_#FF5E5B)]/20" : "border-brand-ink/10"
-      }`}
-      style={{ borderTopColor: team.color, borderTopWidth: 4 }}
+      className="flex min-h-[140px] flex-col rounded-2xl p-3 transition"
+      style={{
+        background: "#FFFFFF",
+        border: isOver ? `1.5px solid ${team.color}` : `1px solid ${BORDER}`,
+        borderLeft: `4px solid ${team.color}`,
+        boxShadow: isOver
+          ? `0 0 0 3px ${team.color}18, 0 2px 8px rgba(26,56,40,0.10)`
+          : "0 1px 4px rgba(26,56,40,0.06)",
+      }}
     >
-      <header className="mb-2 flex items-center justify-between">
-        <h3 className="font-display text-base font-semibold leading-tight">
+      <header className="mb-2 flex items-center justify-between gap-2">
+        <h3
+          className="font-display text-sm font-semibold leading-tight truncate"
+          style={{ color: DARK }}
+        >
           {team.icon ? <span className="mr-1">{team.icon}</span> : null}
           {team.name}
         </h3>
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-            status === "complete"
-              ? "bg-emerald-100 text-emerald-700"
-              : status === "partial"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-brand-ink/10 text-brand-ink/60"
-          }`}
+          className="flex-none rounded-full px-2 py-0.5 text-[10px] font-bold"
+          style={badgeStyle}
         >
           {filled} / {need}
         </span>
       </header>
       {team.description && (
-        <p className="mb-2 text-[11px] text-brand-ink/55 line-clamp-2">{team.description}</p>
+        <p className="mb-2 text-[11px] line-clamp-2" style={{ color: MUTED }}>
+          {team.description}
+        </p>
       )}
-      <div className="space-y-2">
+      <div className="space-y-1.5 flex-1">
         {team.members.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-brand-ink/15 px-2 py-3 text-center text-[11px] text-brand-ink/40">
-            Glisse un bénévole ici
-          </p>
+          <div
+            className="rounded-xl px-2 py-4 text-center"
+            style={{ border: `1px dashed ${BORDER}` }}
+          >
+            <p className="text-[11px]" style={{ color: MUTED }}>
+              Glisse un bénévole ici
+            </p>
+          </div>
         ) : (
           team.members.map((v) => (
             <PlanningVolunteerCard
@@ -66,6 +87,7 @@ export function PlanningTeamColumn({ team }: TeamProps) {
               v={v}
               currentTeamId={team.id}
               currentTeamSlug={team.slug}
+              teamColor={team.color}
             />
           ))
         )}
@@ -84,21 +106,31 @@ export function PlanningPool({ pool, totalPool }: PoolProps) {
   return (
     <section
       ref={setNodeRef}
-      className={`rounded-2xl border-2 border-dashed p-4 transition ${
-        isOver ? "border-[var(--theme-primary,_#FF5E5B)] bg-[var(--theme-primary,_#FF5E5B)]/5" : "border-brand-ink/15 bg-brand-cream/40"
-      }`}
+      className="rounded-2xl p-4 transition"
+      style={{
+        background: isOver ? "rgba(196,154,44,0.06)" : "#F8F4EC",
+        border: isOver ? `1.5px dashed #C49A2C` : `1.5px dashed ${BORDER}`,
+      }}
     >
-      <header className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-ink/70">
-          📋 Bénévoles à placer ({totalPool})
-        </h3>
-        <span className="text-xs text-brand-ink/50">
-          Glisse-dépose ou appui long pour assigner
+      <header className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+            style={{ background: "rgba(26,56,40,0.08)", color: DARK }}
+          >
+            {totalPool}
+          </span>
+          <h3 className="text-xs font-bold uppercase tracking-[0.13em]" style={{ color: MUTED }}>
+            POOL — Bénévoles à placer
+          </h3>
+        </div>
+        <span className="text-[10px]" style={{ color: MUTED }}>
+          Appui long → drag · ou tap pour menu
         </span>
       </header>
       {pool.length === 0 ? (
-        <p className="py-3 text-center text-xs text-brand-ink/50">
-          Tous les bénévoles ont une équipe 🎉
+        <p className="py-3 text-center text-xs" style={{ color: "#10B981" }}>
+          ✅ Tous les bénévoles ont une équipe
         </p>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

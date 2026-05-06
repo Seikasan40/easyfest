@@ -29,14 +29,24 @@ interface Props {
   highlightId?: string | null;
 }
 
+const DARK = "#1A3828";
+const BORDER = "#E5DDD0";
+const MUTED = "#7A7060";
+
 export function PlanningChipsBar({ teams, highlightId }: Props) {
   return (
-    <div className="sticky top-0 z-20 -mx-4 border-b border-brand-ink/10 bg-easyfest-cream/95 px-4 py-2 backdrop-blur md:hidden">
+    <div
+      className="sticky top-0 z-20 -mx-4 px-4 py-2 backdrop-blur md:hidden"
+      style={{
+        background: "rgba(248,244,236,0.95)",
+        borderBottom: `1px solid ${BORDER}`,
+      }}
+    >
       <div className="mb-1.5 flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-ink/55">
+        <p className="text-[10px] font-bold uppercase tracking-[0.13em]" style={{ color: MUTED }}>
           Équipes — touche un bénévole pour l&apos;assigner
         </p>
-        <span className="text-[10px] text-brand-ink/40">{teams.length} équipes</span>
+        <span className="text-[10px]" style={{ color: MUTED }}>{teams.length} équipes</span>
       </div>
       <div
         className="flex gap-2 overflow-x-auto pb-1"
@@ -59,12 +69,13 @@ function PoolChip() {
     <a
       ref={setNodeRef}
       href="#planning-pool"
-      className={`flex h-11 min-w-[88px] flex-none items-center gap-1.5 rounded-full border-2 px-3 text-xs font-semibold transition active:scale-95 ${
-        isOver
-          ? "border-amber-500 bg-amber-100 text-amber-900 shadow-glow-amber"
-          : "border-brand-ink/15 bg-white text-brand-ink/65 hover:border-brand-ink/30"
-      }`}
-      style={{ scrollSnapAlign: "start" }}
+      className="flex h-10 min-w-[72px] flex-none items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition active:scale-95"
+      style={{
+        background: isOver ? "rgba(196,154,44,0.10)" : "#FFFFFF",
+        border: isOver ? "1.5px solid #C49A2C" : `1px solid ${BORDER}`,
+        color: isOver ? "#7A5800" : MUTED,
+        scrollSnapAlign: "start",
+      }}
     >
       <span aria-hidden>🪂</span>
       <span>Pool</span>
@@ -74,36 +85,41 @@ function PoolChip() {
 
 function TeamChip({ team, highlighted }: { team: ChipTeam; highlighted: boolean }) {
   const { setNodeRef, isOver } = useDroppable({ id: `t-${team.id}` });
-  const { openMenu } = useAssign();
 
   const ratio = team.needs > 0 ? team.membersCount / team.needs : 0;
-  const status =
-    ratio === 0 ? "empty" : ratio < 0.5 ? "low" : ratio < 1 ? "mid" : "full";
-  const statusColor = {
-    empty: "bg-red-100 text-red-700",
-    low: "bg-amber-100 text-amber-700",
-    mid: "bg-blue-100 text-blue-700",
-    full: "bg-emerald-100 text-emerald-700",
-  }[status];
+  const countStyle =
+    ratio >= 1
+      ? { background: "rgba(16,185,129,0.12)", color: "#10B981" }
+      : ratio >= 0.5
+      ? { background: "rgba(196,154,44,0.12)", color: "#C49A2C" }
+      : { background: "rgba(239,68,68,0.10)", color: "#DC2626" };
 
   return (
     <a
       ref={setNodeRef}
       href={`#team-${team.slug}`}
-      className={`flex h-11 min-w-[120px] flex-none items-center gap-1.5 rounded-full border-2 px-3 text-xs font-semibold transition active:scale-95 ${
-        isOver
-          ? "border-[var(--theme-primary,_#FF5E5B)] bg-[var(--theme-primary,_#FF5E5B)]/10 text-[var(--theme-primary,_#FF5E5B)] shadow-glow"
+      className="flex h-10 min-w-[110px] flex-none items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition active:scale-95"
+      style={{
+        background: isOver
+          ? `${team.color}15`
           : highlighted
-            ? "border-[var(--theme-primary,_#FF5E5B)]/60 bg-[var(--theme-primary,_#FF5E5B)]/5 text-brand-ink"
-            : "border-brand-ink/15 bg-white text-brand-ink/80 hover:border-brand-ink/30"
-      }`}
-      style={{ scrollSnapAlign: "start" }}
+          ? `${team.color}0D`
+          : "#FFFFFF",
+        border: isOver
+          ? `1.5px solid ${team.color}`
+          : highlighted
+          ? `1px solid ${team.color}50`
+          : `1px solid ${BORDER}`,
+        color: DARK,
+        scrollSnapAlign: "start",
+      }}
       title={`${team.name} : ${team.membersCount}/${team.needs} bénévoles`}
     >
-      {team.icon && <span aria-hidden className="text-sm">{team.icon}</span>}
+      {team.icon && <span aria-hidden className="text-sm leading-none">{team.icon}</span>}
       <span className="truncate">{team.name}</span>
       <span
-        className={`flex-none rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${statusColor}`}
+        className="flex-none rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums"
+        style={countStyle}
         aria-label={`${team.membersCount} sur ${team.needs} bénévoles`}
       >
         {team.membersCount}/{team.needs}

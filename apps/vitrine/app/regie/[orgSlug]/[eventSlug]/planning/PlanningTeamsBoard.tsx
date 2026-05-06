@@ -263,15 +263,18 @@ export function PlanningTeamsBoard({
   return (
     <AssignProvider value={assignContextValue}>
       <div className="space-y-4">
-        {/* Hint UX adaptatif : message différent selon device */}
-        <div className="rounded-lg border border-[var(--theme-primary,_#FF5E5B)]/30 bg-[var(--theme-primary,_#FF5E5B)]/5 px-3 py-2 text-xs text-brand-ink/75">
+        {/* Hint UX adaptatif */}
+        <div
+          className="rounded-xl px-3 py-2 text-xs"
+          style={{ background: "rgba(26,56,40,0.05)", border: "1px solid #E5DDD0", color: "#7A7060" }}
+        >
           <span className="md:hidden">
-            💡 <strong>Sur mobile</strong> : touche court = menu d&apos;équipes (chips en haut).
-            Maintien 250ms puis fais glisser = drag-and-drop vers une équipe.
+            💡 <strong style={{ color: "#1A3828" }}>Sur mobile</strong> : touche court = menu d&apos;équipes (chips en haut).
+            Maintien 250ms puis fais glisser = drag-and-drop.
           </span>
           <span className="hidden md:inline">
-            💡 <strong>Sur ordinateur</strong> : clique-glisse une carte vers une équipe pour
-            assigner. Clic droit sur une carte = menu d&apos;équipes rapide.
+            💡 <strong style={{ color: "#1A3828" }}>Sur ordinateur</strong> : clique-glisse une carte vers une équipe.
+            Clic droit sur une carte = menu rapide.
           </span>
         </div>
 
@@ -282,18 +285,24 @@ export function PlanningTeamsBoard({
             placeholder="Filtrer par nom ou email…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full max-w-xs rounded-lg border border-brand-ink/15 bg-white px-3 py-2 text-base focus:border-[var(--theme-primary,_#FF5E5B)] focus:outline-none sm:text-sm"
-            style={{ fontSize: "16px" }}
+            className="w-full max-w-xs rounded-xl px-3 py-2 text-base focus:outline-none"
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E5DDD0",
+              color: "#1A3828",
+              fontSize: "16px",
+            }}
           />
           {feedback && (
             <span
-              className={`rounded-md px-2 py-1 text-xs font-medium ${
+              className="rounded-xl px-3 py-1.5 text-xs font-semibold"
+              style={
                 feedback.startsWith("❌")
-                  ? "bg-red-100 text-red-700"
+                  ? { background: "rgba(239,68,68,0.10)", color: "#DC2626" }
                   : feedback.startsWith("✓")
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-700"
-              }`}
+                  ? { background: "rgba(16,185,129,0.10)", color: "#10B981" }
+                  : { background: "rgba(196,154,44,0.10)", color: "#7A5800" }
+              }
               role="status"
               aria-live="polite"
             >

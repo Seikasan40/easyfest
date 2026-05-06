@@ -4,6 +4,7 @@
  * Auth + check rôle staff_scan / is_entry_scanner.
  */
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -50,18 +51,33 @@ export default async function StaffLayout({ children, params }: Props) {
           paddingTop: "max(1rem, env(safe-area-inset-top))",
         }}
       >
-        <p
-          className="text-xs font-bold uppercase tracking-[0.2em] mb-0.5"
-          style={{ color: "rgba(196,154,44,0.80)" }}
-        >
-          {orgName} · Mode terrain
-        </p>
-        <h1
-          className="font-display text-xl font-bold"
-          style={{ color: "#FFFFFF" }}
-        >
-          {eventName}
-        </h1>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-xs font-bold uppercase tracking-[0.2em] mb-0.5"
+              style={{ color: "rgba(196,154,44,0.80)" }}
+            >
+              {orgName} · Mode terrain
+            </p>
+            <h1
+              className="font-display text-xl font-bold"
+              style={{ color: "#FFFFFF" }}
+            >
+              {eventName}
+            </h1>
+          </div>
+          <Link
+            href={`/hub?event=${eventSlug}`}
+            className="flex-shrink-0 rounded-xl px-3 py-2 text-xs font-semibold transition"
+            style={{
+              background: "rgba(255,255,255,0.08)",
+              color: "rgba(255,255,255,0.65)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+          >
+            ← Rôles
+          </Link>
+        </div>
       </div>
 
       {/* Content */}

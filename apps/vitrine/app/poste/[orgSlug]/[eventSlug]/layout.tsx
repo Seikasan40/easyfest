@@ -4,6 +4,7 @@
  * Direction/volunteer_lead peuvent aussi accéder pour debug (hierarchy <= 3).
  */
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { createServerClient } from "@/lib/supabase/server";
 
@@ -69,15 +70,24 @@ export default async function PosteLayout({ children, params }: Props) {
         >
           {eventName}
         </h1>
-        <form action="/auth/logout" method="post" className="mt-3">
-          <button
-            type="submit"
-            className="text-xs underline underline-offset-2"
-            style={{ color: MUTED }}
+        <div className="mt-3 flex items-center gap-4">
+          <Link
+            href={`/hub?event=${eventSlug}`}
+            className="text-xs font-semibold underline underline-offset-2"
+            style={{ color: "rgba(255,255,255,0.85)" }}
           >
-            Quitter
-          </button>
-        </form>
+            ← Changer de rôle
+          </Link>
+          <form action="/auth/logout" method="post">
+            <button
+              type="submit"
+              className="text-xs underline underline-offset-2"
+              style={{ color: MUTED }}
+            >
+              Se déconnecter
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Content */}

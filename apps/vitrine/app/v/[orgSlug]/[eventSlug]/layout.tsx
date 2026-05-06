@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { TenantThemeProvider } from "@/components/TenantThemeProvider";
 import { createServerClient } from "@/lib/supabase/server";
@@ -44,6 +45,26 @@ export default async function VolunteerLayout({ children, params }: LayoutProps)
         className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col md:max-w-2xl"
         style={{ background: "#F8F4EC" }}
       >
+        {/* Mini header with back-to-hub link */}
+        <div
+          className="flex items-center px-4 py-2"
+          style={{
+            background: "#1A3828",
+            paddingTop: "max(0.5rem, env(safe-area-inset-top))",
+          }}
+        >
+          <Link
+            href={`/hub?event=${eventSlug}`}
+            className="inline-flex items-center gap-1 text-xs font-semibold"
+            style={{ color: "rgba(255,255,255,0.60)" }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-3.5 w-3.5">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Changer de rôle
+          </Link>
+        </div>
+
         <BottomNav orgSlug={orgSlug} eventSlug={eventSlug} />
 
         <main

@@ -4,6 +4,7 @@
  * Auth + check direction | volunteer_lead.
  */
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { TenantThemeProvider } from "@/components/TenantThemeProvider";
 import { createServerClient } from "@/lib/supabase/server";
@@ -94,9 +95,9 @@ export default async function RegieLayout({ children, params }: Props) {
                   </span>
                 </div>
               </div>
-              <form action="/auth/logout" method="post" className="mt-1 flex-shrink-0">
-                <button
-                  type="submit"
+              <div className="mt-1 flex-shrink-0 flex flex-col items-end gap-1.5">
+                <Link
+                  href={`/hub?event=${eventSlug}`}
                   className="rounded-xl px-3 py-2 text-xs font-semibold transition"
                   style={{
                     background: "rgba(255,255,255,0.10)",
@@ -104,9 +105,18 @@ export default async function RegieLayout({ children, params }: Props) {
                     border: "1px solid rgba(255,255,255,0.15)",
                   }}
                 >
-                  Quitter
-                </button>
-              </form>
+                  ← Changer de rôle
+                </Link>
+                <form action="/auth/logout" method="post">
+                  <button
+                    type="submit"
+                    className="text-[10px] underline underline-offset-2"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                  >
+                    Se déconnecter
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
 

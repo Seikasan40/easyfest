@@ -155,69 +155,116 @@ export default async function HubPage() {
         </p>
       </div>
 
-      {/* Cartes rôles */}
-      <div className="px-4 py-5 space-y-3" data-testid="hub-role-list">
-        {ROLE_CARDS_ORDER.flatMap((roleCode) => {
-          const matches = enrichedMemberships.filter((m: any) => m.role === roleCode);
-          return matches.map((m: any) => {
-            const def = ROLE_DEFINITIONS[roleCode];
-            const orgSlug = m.event?.organization?.slug;
-            const eventSlug = m.event?.slug;
-            const subtitle = def.subtitleTemplate
-              .replace("{firstName}", firstName)
-              .replace("{positionName}", m.position?.name ?? "tous postes");
-            const icon = ROLE_ICON[roleCode] ?? { emoji: "🎟️", bg: "rgba(26,56,40,0.10)" };
+      {/* Cartes rôles — groupées par festival */}
+      <div className="px-4 py-5 space-y-6" data-testid="hub-role-list">
+        {(() => {
+          // Grouper par event_id, en conservant l'ordre d'apparition
+          const eventOrder: string[] = [];
+          const byEvent = new Map<string, typeof enrichedMemberships>();
+          for (const m of enrichedMemberships as any[]) {
+            const eid = m.event?.id ?? "unknown";
+            if (!byEvent.has(eid)) {
+              byEvent.set(eid, []);
+              eventOrder.push(eid);
+            }
+            byEvent.get(eid)!.push(m);
+          }
+
+          return eventOrder.map((eid) => {
+            const membershipsForEvent = byEvent.get(eid)!;
+            const eventInfo = membershipsForEvent[0]?.event;
+            const eventName = eventInfo?.name ?? "Événement";
+            const orgName = eventInfo?.organization?.name ?? "";
+
+            // Trier les cartes selon ROLE_CARDS_ORDER
+            const sortedMemberships = ROLE_CARDS_ORDER
+              .flatMap((roleCode) =>
+                membershipsForEvent
+                  .filter((m: any) => m.role === roleCode)
+                  .map((m: any) => ({ ...m, roleCode })),
+              );
 
             return (
-              <Link
-                key={`${roleCode}-${m.event?.id}`}
-                href={`${def.routePrefix}/${orgSlug}/${eventSlug}`}
-                data-role-card={roleCode}
-                className="flex items-center gap-4 rounded-2xl bg-white p-5 transition hover:opacity-90 active:scale-[0.98]"
-                style={{
-                  border: `1px solid ${BORDER}`,
-                  boxShadow: "0 1px 6px rgba(26,56,40,0.07)",
-                }}
-              >
-                {/* Icône */}
-                <span
-                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-2xl"
-                  style={{ background: icon.bg }}
-                >
-                  {icon.emoji}
-                </span>
-
-                {/* Texte */}
-                <div className="min-w-0 flex-1">
+              <div key={eid}>
+                {/* En-tête festival */}
+                <div className="mb-3 px-1">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5"
+                    style={{ color: MUTED }}
+                  >
+                    {orgName}
+                  </p>
                   <p
                     className="font-display text-base font-bold leading-tight"
                     style={{ color: DARK }}
                   >
-                    {def.label}
-                  </p>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: MUTED }}>
-                    {m.event?.organization?.name} · {m.event?.name}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#9A9080" }}>
-                    {subtitle}
+                    {eventName}
                   </p>
                 </div>
 
-                {/* Flèche */}
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  className="h-5 w-5 flex-shrink-0"
-                  style={{ color: "#C49A2C" }}
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </Link>
+                {/* Cartes du festival */}
+                <div className="space-y-2">
+                  {sortedMemberships.map((m: any) => {
+                    const roleCode = m.roleCode as keyof typeof ROLE_DEFINITIONS;
+                    const def = ROLE_DEFINITIONS[roleCode];
+                    const orgSlug = m.event?.organization?.slug;
+                    const eventSlug = m.event?.slug;
+                    const subtitle = def.subtitleTemplate
+                      .replace("{firstName}", firstName)
+                      .replace("{positionName}", m.position?.name ?? "tous postes");
+                    const icon = ROLE_ICON[roleCode] ?? { emoji: "🎟️", bg: "rgba(26,56,40,0.10)" };
+
+                    return (
+                      <Link
+                        key={`${roleCode}-${eid}`}
+                        href={`${def.routePrefix}/${orgSlug}/${eventSlug}`}
+                        data-role-card={roleCode}
+                        className="flex items-center gap-4 rounded-2xl bg-white p-4 transition hover:opacity-90 active:scale-[0.98]"
+                        style={{
+                          border: `1px solid ${BORDER}`,
+                          boxShadow: "0 1px 6px rgba(26,56,40,0.07)",
+                        }}
+                      >
+                        {/* Icône */}
+                        <span
+                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl"
+                          style={{ background: icon.bg }}
+                        >
+                          {icon.emoji}
+                        </span>
+
+                        {/* Texte */}
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="font-display text-sm font-bold leading-tight"
+                            style={{ color: DARK }}
+                          >
+                            {def.label}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: "#9A9080" }}>
+                            {subtitle}
+                          </p>
+                        </div>
+
+                        {/* Flèche */}
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          className="h-4 w-4 flex-shrink-0"
+                          style={{ color: "#C49A2C" }}
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           });
-        })}
+        })()}
       </div>
 
       {/* Footer liens */}

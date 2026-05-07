@@ -10,9 +10,8 @@ import {
   deleteApplication,
   revokeAccess,
   changeMemberRole,
-  MEMBER_ROLES,
-  type MemberRole,
 } from "@/app/actions/applications-admin";
+import { MEMBER_ROLES, type MemberRole } from "@/lib/member-roles";
 
 interface Application {
   id: string;

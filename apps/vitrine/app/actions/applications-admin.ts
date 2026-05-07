@@ -4,15 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { createServerClient } from "@/lib/supabase/server";
 
-// ─── Rôles disponibles ────────────────────────────────────────────────────────
-export const MEMBER_ROLES = [
-  { value: "volunteer",       label: "Bénévole" },
-  { value: "volunteer_lead",  label: "Resp. bénévoles" },
-  { value: "post_lead",       label: "Resp. de poste" },
-  { value: "staff_scan",      label: "Staff scan" },
-  { value: "direction",       label: "Direction" },
-] as const;
-export type MemberRole = (typeof MEMBER_ROLES)[number]["value"];
+// ─── Rôles disponibles (re-exportés depuis lib/member-roles pour les server actions) ──
+export { MEMBER_ROLES, type MemberRole } from "@/lib/member-roles";
 
 export async function validateApplication(applicationId: string) {
   const supabase = createServerClient();

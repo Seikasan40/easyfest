@@ -57,9 +57,13 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
   if (all.length === 0) notFound();
   const membership = all[0];
   const m = membership as any;
+  // "Peut changer le statut" = médiateur certifié ou direction
   const isMediator = all.some((mb) => mb.is_mediator === true || mb.role === "direction");
+  // "Peut supprimer des alertes" = direction uniquement
+  const isDirection = all.some((mb) => mb.role === "direction");
 
-  // Bénévole non-médiateur → formulaire de signalement stylisé
+  // Tout le monde (y compris médiateur/direction) peut créer une alerte via ce formulaire.
+  // Seuls les médiateurs voient en plus le tableau de bord.
   if (!isMediator) {
     return (
       <div className="flex flex-col" style={{ minHeight: "100%" }}>
@@ -193,6 +197,7 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
           alerts={myAlerts}
           emptyText="Aucune alerte ne t'est assignée."
           currentUserId={userData.user!.id}
+          isDirection={isDirection}
           orgSlug={orgSlug}
           eventSlug={eventSlug}
         />
@@ -202,6 +207,7 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
           alerts={openAlerts}
           emptyText="Aucune alerte ouverte. Espace serein 💚"
           currentUserId={userData.user!.id}
+          isDirection={isDirection}
           orgSlug={orgSlug}
           eventSlug={eventSlug}
           highlight
@@ -213,9 +219,34 @@ export default async function VolunteerSaferPage({ params }: PageProps) {
           emptyText="Pas d'historique sur cet événement."
           compact
           currentUserId={userData.user!.id}
+          isDirection={isDirection}
           orgSlug={orgSlug}
           eventSlug={eventSlug}
         />
+
+        {/* ── Signaler soi-même ─────────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex-1 h-px" style={{ background: "#E5DDD0" }} />
+            <span className="text-[10px] font-bold uppercase tracking-[0.13em]" style={{ color: "#7A7060" }}>
+              🛡️ Signaler une situation
+            </span>
+            <div className="flex-1 h-px" style={{ background: "#E5DDD0" }} />
+          </div>
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ background: "white", border: "1px solid #E5DDD0" }}
+          >
+            <div className="px-4 pt-3 pb-1">
+              <p className="text-xs" style={{ color: "#7A7060" }}>
+                Même en tant que médiateur·ice, tu peux signaler un incident pour qu&apos;un autre médiateur le prenne en charge.
+              </p>
+            </div>
+            <div className="px-4 pb-4">
+              <SaferReportForm orgSlug={orgSlug} eventSlug={eventSlug} />
+            </div>
+          </div>
+        </div>
 
         {/* Urgence */}
         <div
@@ -239,6 +270,7 @@ function AlertSection({
   compact,
   highlight,
   currentUserId,
+  isDirection,
   orgSlug,
   eventSlug,
 }: {
@@ -248,6 +280,7 @@ function AlertSection({
   compact?: boolean;
   highlight?: boolean;
   currentUserId: string;
+  isDirection?: boolean;
   orgSlug: string;
   eventSlug: string;
 }) {
@@ -278,6 +311,7 @@ function AlertSection({
               compact={compact}
               highlight={highlight}
               currentUserId={currentUserId}
+              isDirection={isDirection}
               orgSlug={orgSlug}
               eventSlug={eventSlug}
             />
@@ -293,6 +327,7 @@ function AlertCard({
   compact,
   highlight,
   currentUserId,
+  isDirection,
   orgSlug,
   eventSlug,
 }: {
@@ -300,6 +335,7 @@ function AlertCard({
   compact?: boolean;
   highlight?: boolean;
   currentUserId: string;
+  isDirection?: boolean;
   orgSlug: string;
   eventSlug: string;
 }) {
@@ -366,6 +402,22 @@ function AlertCard({
                   status={a.status}
                   isMine={isMine}
                   isOpen={isOpen}
+                  isDirection={isDirection}
+                />
+              </div>
+            )}
+            {/* Suppression (direction uniquement, même si compact) */}
+            {isDirection && compact && (
+              <div className="mt-2">
+                <SaferAlertActions
+                  alertId={a.id}
+                  orgSlug={orgSlug}
+                  eventSlug={eventSlug}
+                  status={a.status}
+                  isMine={isMine}
+                  isOpen={isOpen}
+                  isDirection={isDirection}
+                  deleteOnly
                 />
               </div>
             )}

@@ -11,16 +11,24 @@ const PROTO_DARK = "#1A3828";
 const PROTO_GOLD = "#C49A2C";
 const PROTO_GOLD_BG = "#F5E9C4";
 
-/** Formate une durée en "Dans X h Y" ou "Dans X min" */
+/** Formate une durée en "Dans Xj Yh Zmin" */
 function timeUntilLabel(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const diff = new Date(iso).getTime() - Date.now();
   if (diff <= 0) return null;
   const totalMin = Math.floor(diff / 60000);
   if (totalMin < 60) return `Dans ${totalMin} min`;
-  const h = Math.floor(totalMin / 60);
+  const totalH = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  return m > 0 ? `Dans ${h} h ${m}` : `Dans ${h} h`;
+  if (totalH < 24) {
+    return m > 0 ? `Dans ${totalH}h ${m}min` : `Dans ${totalH}h`;
+  }
+  const j = Math.floor(totalH / 24);
+  const h = totalH % 24;
+  if (h === 0 && m === 0) return `Dans ${j}j`;
+  if (h === 0) return `Dans ${j}j ${m}min`;
+  if (m === 0) return `Dans ${j}j ${h}h`;
+  return `Dans ${j}j ${h}h ${m}min`;
 }
 
 /** "vendredi 18 h – minuit" */
@@ -251,27 +259,16 @@ export default async function VolunteerHome({ params }: PageProps) {
     <div className="pb-6">
 
       {/* ─── HEADER PAGE ───────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between px-5 pt-8 pb-5">
-        <div>
-          <h1
-            className="font-display text-2xl font-bold leading-tight"
-            style={{ color: PROTO_DARK, letterSpacing: "-0.01em" }}
-          >
-            Salut {firstName}
-          </h1>
-          <p className="mt-0.5 text-sm" style={{ color: "#9A9080" }}>
-            {today[0].toUpperCase() + today.slice(1)} · {cdLabel}
-          </p>
-        </div>
-        <form action="/auth/logout" method="post" className="mt-1">
-          <button
-            type="submit"
-            className="rounded-xl border px-3 py-1.5 text-xs font-medium"
-            style={{ borderColor: "#E5DDD0", color: "#9A9080", background: "white" }}
-          >
-            Quitter
-          </button>
-        </form>
+      <div className="px-5 pt-8 pb-5">
+        <h1
+          className="font-display text-2xl font-bold leading-tight"
+          style={{ color: PROTO_DARK, letterSpacing: "-0.01em" }}
+        >
+          Salut {firstName}
+        </h1>
+        <p className="mt-0.5 text-sm" style={{ color: "#9A9080" }}>
+          {today[0].toUpperCase() + today.slice(1)} · {cdLabel}
+        </p>
       </div>
 
       {/* ─── CARTE ÉVÉNEMENT (vert forêt) ──────────────────────────────── */}
@@ -343,23 +340,15 @@ export default async function VolunteerHome({ params }: PageProps) {
             >
               📍 Plan
             </Link>
-            {teamLead ? (
-              <a
-                href={teamLead.phone ? `tel:${teamLead.phone}` : `mailto:${teamLead.email}`}
-                className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold text-white"
-                style={{ background: "rgba(255,255,255,0.15)" }}
-              >
-                💬 Mon resp.
-              </a>
-            ) : (
-              <Link
-                href={`/v/${orgSlug}/${eventSlug}/chat`}
-                className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold text-white"
-                style={{ background: "rgba(255,255,255,0.15)" }}
-              >
-                💬 Mon resp.
-              </Link>
-            )}
+            <Link
+              href={teamLead?.user_id
+                ? `/v/${orgSlug}/${eventSlug}/chat?dm=${teamLead.user_id}`
+                : `/v/${orgSlug}/${eventSlug}/chat`}
+              className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold text-white"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+            >
+              💬 Mon resp.
+            </Link>
             <Link
               href={`/v/${orgSlug}/${eventSlug}/safer`}
               className="flex flex-col items-center gap-1 rounded-xl py-3 text-xs font-semibold"
@@ -485,10 +474,10 @@ export default async function VolunteerHome({ params }: PageProps) {
         >
           Afficher mon QR pour entrer
         </Link>
-        {teamLead && (leadName) && (
-          <a
-            href={teamLead.phone ? `tel:${teamLead.phone}` : `mailto:${teamLead.email}`}
-            className="flex w-full items-center justify-center rounded-2xl py-4 text-base font-semibold transition hover:bg-proto-border/30"
+        {teamLead && leadName && (
+          <Link
+            href={`/v/${orgSlug}/${eventSlug}/chat?dm=${teamLead.user_id}`}
+            className="flex w-full items-center justify-center rounded-2xl py-4 text-base font-semibold transition hover:opacity-90"
             style={{
               background: "white",
               border: "1px solid #E5DDD0",
@@ -496,8 +485,8 @@ export default async function VolunteerHome({ params }: PageProps) {
               minHeight: "56px",
             }}
           >
-            Contacter {leadName}
-          </a>
+            💬 Message à {leadName}
+          </Link>
         )}
       </div>
 

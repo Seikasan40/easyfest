@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
+  searchParams: Promise<{ dm?: string }>;
 }
 
 /**
@@ -22,8 +23,9 @@ interface PageProps {
  * La RLS Postgres est la source de vérité.
  * On construit ici l'UI uniquement avec les canaux auxquels l'user a accès.
  */
-export default async function ChatPage({ params }: PageProps) {
+export default async function ChatPage({ params, searchParams }: PageProps) {
   const { orgSlug, eventSlug } = await params;
+  const { dm: dmUserId } = await searchParams;
   const supabase = createServerClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect(`/auth/login?redirect=/v/${orgSlug}/${eventSlug}/chat`);
@@ -56,7 +58,7 @@ export default async function ChatPage({ params }: PageProps) {
   // Canaux accessibles — RLS filtre déjà, mais on enrichit avec le nom de la position
   const { data: rawChannels } = await supabase
     .from("message_channels")
-    .select("id, name, kind, position_id, positions:position_id (name, icon)")
+    .select("id, name, kind, position_id, participant_user_ids, positions:position_id (name, icon)")
     .eq("event_id", eventId)
     .order("kind")
     .order("name");
@@ -67,6 +69,7 @@ export default async function ChatPage({ params }: PageProps) {
     name: string;
     kind: "team" | "leadership" | "dm";
     position_id: string | null;
+    participant_user_ids: string[] | null;
     positions: { name: string; icon: string | null } | null;
   };
 
@@ -82,6 +85,34 @@ export default async function ChatPage({ params }: PageProps) {
     if (ch.kind === "dm") return true; // les DMs sont filtrés par RLS
     return false;
   });
+
+  // ── Trouver ou créer le canal direct si ?dm=userId ─────────────────────────
+  let dmChannelId: string | null = null;
+  if (dmUserId && dmUserId !== userData.user.id) {
+    // Chercher canal direct existant entre les deux users
+    const existing = allChannels.find((ch) => {
+      if (ch.kind !== "dm") return false;
+      const pts: string[] = ch.participant_user_ids ?? [];
+      return pts.includes(userData.user!.id) && pts.includes(dmUserId!);
+    });
+
+    if (existing) {
+      dmChannelId = existing.id;
+    } else {
+      // Créer le canal direct
+      const { data: newCh } = await supabase
+        .from("message_channels")
+        .insert({
+          event_id: eventId,
+          kind: "direct",
+          name: `dm-${[userData.user.id, dmUserId].sort().join("-").slice(0, 40)}`,
+          participant_user_ids: [userData.user.id, dmUserId],
+        } as any)
+        .select("id")
+        .single();
+      if (newCh) dmChannelId = (newCh as any).id;
+    }
+  }
 
   const uiChannels = visibleChannels.map((ch) => ({
     id: ch.id,
@@ -102,13 +133,30 @@ export default async function ChatPage({ params }: PageProps) {
           : (ch.positions?.icon ?? "👥"),
   }));
 
+  // Si un canal DM a été trouvé/créé et n'est pas encore dans la liste, l'ajouter
+  let finalChannels = uiChannels;
+  let defaultChannelId = dmChannelId ?? uiChannels[0]?.id;
+  if (dmChannelId && !uiChannels.find((c) => c.id === dmChannelId)) {
+    finalChannels = [
+      {
+        id: dmChannelId,
+        name: "Message direct",
+        kind: "dm",
+        position_id: null,
+        label: "Message direct",
+        emoji: "💌",
+      },
+      ...uiChannels,
+    ];
+  }
+
   return (
     <ChatView
-      channels={uiChannels}
+      channels={finalChannels}
       currentUserId={userData.user.id}
       orgSlug={orgSlug}
       eventSlug={eventSlug}
-      defaultChannelId={uiChannels[0]?.id}
+      defaultChannelId={defaultChannelId}
     />
   );
 }

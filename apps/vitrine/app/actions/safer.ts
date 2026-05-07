@@ -213,6 +213,110 @@ export async function resolveSaferAlert(input: AlertActionInput): Promise<Action
   return { ok: true };
 }
 
+// ─── Suppression d'une alerte (direction uniquement) ─────────────────────────
+
+export async function deleteSaferAlert(input: AlertActionInput): Promise<ActionResult> {
+  const supabase = createServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Non authentifié" };
+
+  // Vérifier que le user est "direction" sur cet event
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("role, event:event_id (id, slug, organization:organization_id (slug))")
+    .eq("user_id", userData.user.id)
+    .eq("is_active", true)
+    .filter("event.slug", "eq", input.eventSlug)
+    .filter("event.organization.slug", "eq", input.orgSlug);
+
+  const all = (memberships ?? []) as any[];
+  const isDirection = all.some((mb) => mb.role === "direction");
+  if (!isDirection) return { ok: false, error: "Direction uniquement" };
+  const eventId = all.find((mb) => mb.event?.id)?.event?.id as string | undefined;
+  if (!eventId) return { ok: false, error: "Événement introuvable" };
+
+  let admin;
+  try {
+    admin = createServiceClient();
+  } catch {
+    return { ok: false, error: "Configuration serveur indisponible" };
+  }
+
+  // Vérifier que l'alerte appartient bien à cet event
+  const { data: existing } = await admin
+    .from("safer_alerts")
+    .select("id, event_id")
+    .eq("id", input.alertId)
+    .maybeSingle();
+  if (!existing || (existing as any).event_id !== eventId)
+    return { ok: false, error: "Alerte introuvable" };
+
+  const { error } = await admin.from("safer_alerts").delete().eq("id", input.alertId);
+  if (error) return { ok: false, error: error.message };
+
+  await admin.from("audit_log").insert({
+    event_id: eventId,
+    user_id: userData.user.id,
+    action: "safer.alert.deleted",
+    payload: { alert_id: input.alertId },
+  });
+
+  revalidatePath(`/v/${input.orgSlug}/${input.eventSlug}/safer`);
+  revalidatePath(`/regie/${input.orgSlug}/${input.eventSlug}/safer`);
+  return { ok: true };
+}
+
+// ─── Vider l'historique résolu/fausse alerte (direction uniquement) ───────────
+
+export async function clearSaferHistory(input: {
+  orgSlug: string;
+  eventSlug: string;
+}): Promise<ActionResult> {
+  const supabase = createServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { ok: false, error: "Non authentifié" };
+
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("role, event:event_id (id, slug, organization:organization_id (slug))")
+    .eq("user_id", userData.user.id)
+    .eq("is_active", true)
+    .filter("event.slug", "eq", input.eventSlug)
+    .filter("event.organization.slug", "eq", input.orgSlug);
+
+  const all = (memberships ?? []) as any[];
+  const isDirection = all.some((mb) => mb.role === "direction");
+  if (!isDirection) return { ok: false, error: "Direction uniquement" };
+  const eventId = all.find((mb) => mb.event?.id)?.event?.id as string | undefined;
+  if (!eventId) return { ok: false, error: "Événement introuvable" };
+
+  let admin;
+  try {
+    admin = createServiceClient();
+  } catch {
+    return { ok: false, error: "Configuration serveur indisponible" };
+  }
+
+  const { error } = await admin
+    .from("safer_alerts")
+    .delete()
+    .eq("event_id", eventId)
+    .in("status", ["resolved", "false_alarm"]);
+
+  if (error) return { ok: false, error: error.message };
+
+  await admin.from("audit_log").insert({
+    event_id: eventId,
+    user_id: userData.user.id,
+    action: "safer.history.cleared",
+    payload: {},
+  });
+
+  revalidatePath(`/v/${input.orgSlug}/${input.eventSlug}/safer`);
+  revalidatePath(`/regie/${input.orgSlug}/${input.eventSlug}/safer`);
+  return { ok: true };
+}
+
 export async function markFalseAlarmSaferAlert(input: AlertActionInput): Promise<ActionResult> {
   const auth = await checkMediatorAuth(input.eventSlug, input.orgSlug);
   if (!auth.ok) return { ok: false, error: auth.error };

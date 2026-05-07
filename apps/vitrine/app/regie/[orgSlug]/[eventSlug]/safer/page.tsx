@@ -1,12 +1,13 @@
 import { formatDateTimeFr } from "@easyfest/shared";
 import { createServerClient } from "@/lib/supabase/server";
+import { DeleteAlertBtn, ClearHistoryBtn } from "./SaferDeleteBtn";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; eventSlug: string }>;
 }
 
 export default async function SaferPage({ params }: PageProps) {
-  const { eventSlug } = await params;
+  const { orgSlug, eventSlug } = await params;
   const supabase = createServerClient();
 
   const { data: ev } = await supabase
@@ -78,7 +79,12 @@ export default async function SaferPage({ params }: PageProps) {
       </header>
 
       <section>
-        <h3 className="mb-3 font-display text-lg font-semibold">🚨 Alertes graves</h3>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="font-display text-lg font-semibold">🚨 Alertes graves</h3>
+          {alerts.some((a: any) => ["resolved", "false_alarm"].includes(a.status)) && (
+            <ClearHistoryBtn orgSlug={orgSlug} eventSlug={eventSlug} />
+          )}
+        </div>
         {alerts.length === 0 ? (
           <p className="rounded-xl bg-wellbeing-green/10 p-4 text-sm">✅ Aucune alerte enregistrée.</p>
         ) : (
@@ -98,8 +104,8 @@ export default async function SaferPage({ params }: PageProps) {
                       : "border-brand-ink/10 bg-white"
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium">
                         {alertEmoji(a.kind)} {a.kind}
                         {a.location_hint && <span className="ml-2 text-brand-ink/60">· {a.location_hint}</span>}
@@ -111,8 +117,11 @@ export default async function SaferPage({ params }: PageProps) {
                         {formatDateTimeFr(a.created_at)}
                         {reporterName && <span className="ml-2">· signalé par {reporterName}</span>}
                       </p>
+                      <div className="mt-2">
+                        <DeleteAlertBtn alertId={a.id} orgSlug={orgSlug} eventSlug={eventSlug} />
+                      </div>
                     </div>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTone(a.status)}`}>
+                    <span className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTone(a.status)}`}>
                       {a.status}
                     </span>
                   </div>

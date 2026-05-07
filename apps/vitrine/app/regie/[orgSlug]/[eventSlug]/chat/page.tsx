@@ -45,37 +45,68 @@ export default async function RegieChatPage({ params }: PageProps) {
   // Tous les canaux (RLS + filtre applicatif rôle élevé = tout)
   const { data: rawChannels } = await supabase
     .from("message_channels")
-    .select("id, name, kind, position_id, positions:position_id (name, icon)")
+    .select("id, name, kind, position_id, participant_user_ids, positions:position_id (name, icon)")
     .eq("event_id", eventId)
     .order("kind")
     .order("name");
+
+  // Résoudre les noms des interlocuteurs pour les canaux DM
+  const dmChannels = (rawChannels ?? []).filter((c: any) => c.kind === "direct" || c.kind === "dm");
+  const otherUserIds = [
+    ...new Set(
+      dmChannels.flatMap((c: any) =>
+        ((c.participant_user_ids ?? []) as string[]).filter((id) => id !== userData.user!.id),
+      ),
+    ),
+  ];
+  const dmNameMap: Record<string, string> = {};
+  if (otherUserIds.length > 0) {
+    const { data: apps } = await supabase
+      .from("volunteer_applications")
+      .select("user_id, full_name")
+      .eq("event_id", eventId)
+      .in("user_id", otherUserIds);
+    for (const a of apps ?? []) {
+      if (a.user_id) dmNameMap[a.user_id] = a.full_name ?? "Interlocuteur";
+    }
+  }
 
   type RawCh = {
     id: string;
     name: string;
     kind: "team" | "leadership" | "dm";
     position_id: string | null;
+    participant_user_ids: string[] | null;
     positions: { name: string; icon: string | null } | null;
   };
 
-  const uiChannels = ((rawChannels ?? []) as RawCh[]).map((ch) => ({
-    id: ch.id,
-    name: ch.name,
-    kind: ch.kind,
-    position_id: ch.position_id,
-    label:
-      ch.kind === "leadership"
-        ? "Régie / Direction"
-        : ch.kind === "dm"
-          ? "Message direct"
-          : ch.positions?.name ?? ch.name,
-    emoji:
-      ch.kind === "leadership"
-        ? "🎛️"
-        : ch.kind === "dm"
-          ? "💌"
-          : (ch.positions?.icon ?? "👥"),
-  }));
+  const uiChannels = ((rawChannels ?? []) as RawCh[]).map((ch) => {
+    let dmLabel = "Message direct";
+    if (ch.kind === "dm") {
+      const otherId = ((ch.participant_user_ids ?? []) as string[]).find(
+        (id) => id !== userData.user!.id,
+      );
+      if (otherId && dmNameMap[otherId]) dmLabel = `DM : ${dmNameMap[otherId]}`;
+    }
+    return {
+      id: ch.id,
+      name: ch.name,
+      kind: ch.kind,
+      position_id: ch.position_id,
+      label:
+        ch.kind === "leadership"
+          ? "Régie / Direction"
+          : ch.kind === "dm"
+            ? dmLabel
+            : ch.positions?.name ?? ch.name,
+      emoji:
+        ch.kind === "leadership"
+          ? "🎛️"
+          : ch.kind === "dm"
+            ? "💌"
+            : (ch.positions?.icon ?? "👥"),
+    };
+  });
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col rounded-xl border border-brand-ink/10 bg-white overflow-hidden">

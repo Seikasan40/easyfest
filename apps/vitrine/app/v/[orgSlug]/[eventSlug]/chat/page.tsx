@@ -63,6 +63,27 @@ export default async function ChatPage({ params, searchParams }: PageProps) {
     .order("kind")
     .order("name");
 
+  // Résoudre les noms des interlocuteurs pour les canaux DM
+  const dmChannels = (rawChannels ?? []).filter((c: any) => c.kind === "direct" || c.kind === "dm");
+  const otherUserIds = [
+    ...new Set(
+      dmChannels.flatMap((c: any) =>
+        ((c.participant_user_ids ?? []) as string[]).filter((id) => id !== userData.user!.id),
+      ),
+    ),
+  ];
+  const dmNameMap: Record<string, string> = {};
+  if (otherUserIds.length > 0) {
+    const { data: apps } = await supabase
+      .from("volunteer_applications")
+      .select("user_id, full_name")
+      .eq("event_id", eventId)
+      .in("user_id", otherUserIds);
+    for (const a of apps ?? []) {
+      if (a.user_id) dmNameMap[a.user_id] = a.full_name ?? "Interlocuteur";
+    }
+  }
+
   // Mapper vers un format UI
   type RawCh = {
     id: string;
@@ -114,36 +135,58 @@ export default async function ChatPage({ params, searchParams }: PageProps) {
     }
   }
 
-  const uiChannels = visibleChannels.map((ch) => ({
-    id: ch.id,
-    name: ch.name,
-    kind: ch.kind,
-    position_id: ch.position_id,
-    label:
-      ch.kind === "leadership"
-        ? "Régie / Direction"
-        : ch.kind === "dm"
-          ? "Message direct"
-          : ch.positions?.name ?? ch.name,
-    emoji:
-      ch.kind === "leadership"
-        ? "🎛️"
-        : ch.kind === "dm"
-          ? "💌"
-          : (ch.positions?.icon ?? "👥"),
-  }));
+  const uiChannels = visibleChannels.map((ch) => {
+    let dmLabel = "Message direct";
+    if (ch.kind === "dm") {
+      const otherId = ((ch.participant_user_ids ?? []) as string[]).find(
+        (id) => id !== userData.user!.id,
+      );
+      if (otherId && dmNameMap[otherId]) dmLabel = `DM : ${dmNameMap[otherId]}`;
+    }
+    return {
+      id: ch.id,
+      name: ch.name,
+      kind: ch.kind,
+      position_id: ch.position_id,
+      label:
+        ch.kind === "leadership"
+          ? "Régie / Direction"
+          : ch.kind === "dm"
+            ? dmLabel
+            : ch.positions?.name ?? ch.name,
+      emoji:
+        ch.kind === "leadership"
+          ? "🎛️"
+          : ch.kind === "dm"
+            ? "💌"
+            : (ch.positions?.icon ?? "👥"),
+    };
+  });
 
   // Si un canal DM a été trouvé/créé et n'est pas encore dans la liste, l'ajouter
   let finalChannels = uiChannels;
   let defaultChannelId = dmChannelId ?? uiChannels[0]?.id;
   if (dmChannelId && !uiChannels.find((c) => c.id === dmChannelId)) {
+    // Récupérer le nom du destinataire si possible
+    let newDmLabel = "Message direct";
+    if (dmUserId && dmNameMap[dmUserId]) {
+      newDmLabel = `DM : ${dmNameMap[dmUserId]}`;
+    } else if (dmUserId) {
+      const { data: app } = await supabase
+        .from("volunteer_applications")
+        .select("full_name")
+        .eq("event_id", eventId)
+        .eq("user_id", dmUserId)
+        .maybeSingle();
+      if (app?.full_name) newDmLabel = `DM : ${app.full_name}`;
+    }
     finalChannels = [
       {
         id: dmChannelId,
-        name: "Message direct",
+        name: newDmLabel,
         kind: "dm",
         position_id: null,
-        label: "Message direct",
+        label: newDmLabel,
         emoji: "💌",
       },
       ...uiChannels,

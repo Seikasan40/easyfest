@@ -4,9 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { createServerClient } from "@/lib/supabase/server";
 
-// ─── Rôles disponibles (re-exportés depuis lib/member-roles pour les server actions) ──
-export { MEMBER_ROLES, type MemberRole } from "@/lib/member-roles";
-
 export async function validateApplication(applicationId: string) {
   const supabase = createServerClient();
   const { data: userData } = await supabase.auth.getUser();

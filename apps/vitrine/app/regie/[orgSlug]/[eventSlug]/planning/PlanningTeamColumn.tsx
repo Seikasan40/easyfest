@@ -135,10 +135,10 @@ export function PlanningPool({ pool, totalPool }: PoolProps) {
       style={{
         background: isOver
           ? "rgba(196,154,44,0.06)"
-          : "rgba(255,255,255,0.04)",
+          : "rgba(26,56,40,0.04)",
         border: isOver
           ? "1.5px dashed rgba(196,154,44,0.50)"
-          : "1px dashed rgba(255,255,255,0.15)",
+          : "1px dashed rgba(26,56,40,0.18)",
         padding: "16px",
       }}
     >
@@ -146,15 +146,15 @@ export function PlanningPool({ pool, totalPool }: PoolProps) {
         <span
           className="rounded-full px-2 py-0.5 text-[11px] font-bold"
           style={{
-            background: totalPool > 0 ? "rgba(239,68,68,0.20)" : "rgba(16,185,129,0.15)",
-            color: totalPool > 0 ? "#F87171" : "#34D399",
+            background: totalPool > 0 ? "rgba(239,68,68,0.12)" : "rgba(16,185,129,0.12)",
+            color: totalPool > 0 ? "#B91C1C" : "#065F46",
           }}
         >
           {totalPool}
         </span>
         <h3
           className="text-[11px] font-bold uppercase tracking-[0.15em]"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          style={{ color: "#7A7060" }}
         >
           Sans équipe
         </h3>

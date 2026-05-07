@@ -1,4 +1,3 @@
-import { formatDateTimeFr, isMinor } from "@easyfest/shared";
 import { createServerClient } from "@/lib/supabase/server";
 import { ApplicationsTable } from "@/components/applications-table";
 
@@ -22,7 +21,7 @@ export default async function ApplicationsPage({ params }: PageProps) {
     .select(`
       id, event_id, status, full_name, first_name, last_name, email, phone, birth_date, is_minor,
       arrival_at, departure_at, preferred_position_slugs, skills, limitations,
-      created_at, refusal_reason, source, admin_notes, invited_at
+      created_at, refusal_reason, source, invited_at
     `)
     .eq("event_id", ev.id)
     .order("created_at", { ascending: false });

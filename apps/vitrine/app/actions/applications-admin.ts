@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, createServiceClient } from "@/lib/supabase/server";
+import type { MemberRole } from "@/lib/member-roles";
 
 export async function validateApplication(applicationId: string) {
   const supabase = createServerClient();
@@ -183,7 +184,9 @@ export async function deleteApplication(applicationId: string) {
   );
   if (!hasAccess) return { ok: false, error: "Permission refusée" };
 
-  const { error } = await supabase
+  // Service role : RLS ne bloque pas les suppressions côté direction
+  const service = createServiceClient();
+  const { error } = await service
     .from("volunteer_applications")
     .delete()
     .eq("id", applicationId);
@@ -217,7 +220,8 @@ export async function revokeAccess(userId: string, eventId: string) {
   );
   if (!hasAccess) return { ok: false, error: "Seule la direction peut révoquer un accès" };
 
-  const { error } = await supabase
+  const service = createServiceClient();
+  const { error } = await service
     .from("memberships")
     .update({ is_active: false })
     .eq("user_id", userId)
@@ -252,7 +256,8 @@ export async function changeMemberRole(userId: string, eventId: string, newRole:
   );
   if (!hasAccess) return { ok: false, error: "Seule la direction peut modifier un rôle" };
 
-  const { error } = await supabase
+  const service = createServiceClient();
+  const { error } = await service
     .from("memberships")
     .update({ role: newRole })
     .eq("user_id", userId)

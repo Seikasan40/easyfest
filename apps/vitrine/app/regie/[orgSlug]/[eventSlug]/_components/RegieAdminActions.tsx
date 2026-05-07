@@ -10,70 +10,26 @@ interface Props {
   eventId: string;
 }
 
-const ACTIONS = [
-  {
-    key: "pdf",
-    emoji: "📄",
-    label: "Export PDF",
-    description: "Rapport complet de l'événement",
-    href: null,
-  },
-  {
-    key: "csv",
-    emoji: "📊",
-    label: "Export CSV",
-    description: "Liste des bénévoles et stats",
-    href: null,
-  },
-  {
-    key: "broadcast",
-    emoji: "📣",
-    label: "Diffuser",
-    description: "Message à tous les bénévoles",
-    hrefSuffix: "/messages",
-  },
-];
-
 export function RegieAdminActions({ orgSlug, eventSlug }: Props) {
   const base = `/regie/${orgSlug}/${eventSlug}`;
 
   return (
     <section>
-      {/* Boutons d'action rapide */}
+      {/* Bouton d'action rapide */}
       <div className="flex gap-2 flex-wrap">
-        {ACTIONS.map((action) => (
-          action.hrefSuffix ? (
-            <Link
-              key={action.key}
-              href={`${base}${action.hrefSuffix}`}
-              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition hover:opacity-80"
-              style={{
-                background: "#FFFFFF",
-                border: `1px solid ${BORDER}`,
-                color: DARK,
-                boxShadow: "0 1px 4px rgba(26,56,40,0.06)",
-              }}
-            >
-              <span>{action.emoji}</span>
-              <span>{action.label}</span>
-            </Link>
-          ) : (
-            <button
-              key={action.key}
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition hover:opacity-80"
-              style={{
-                background: "#FFFFFF",
-                border: `1px solid ${BORDER}`,
-                color: DARK,
-                boxShadow: "0 1px 4px rgba(26,56,40,0.06)",
-              }}
-            >
-              <span>{action.emoji}</span>
-              <span>{action.label}</span>
-            </button>
-          )
-        ))}
+        <Link
+          href={`${base}/messages`}
+          className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition hover:opacity-80"
+          style={{
+            background: "#FFFFFF",
+            border: `1px solid ${BORDER}`,
+            color: DARK,
+            boxShadow: "0 1px 4px rgba(26,56,40,0.06)",
+          }}
+        >
+          <span>📣</span>
+          <span>Diffuser</span>
+        </Link>
       </div>
 
       {/* Liens rapides */}
